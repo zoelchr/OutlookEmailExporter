@@ -122,6 +122,7 @@ def lade_ordner(event=None):
         combo_ordner.current(0)
 
 # GUI
+print("Starte GUI...")
 fenster = tk.Tk()
 fenster.title("Outlook Mail-Manager – Dynamische Ordner")
 fenster.geometry("950x650")
