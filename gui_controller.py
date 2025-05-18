@@ -13,10 +13,12 @@ der dahinterliegenden Logik und den Outlook-Funktionen. Es kapselt Interaktionsl
 Wird direkt nach GUI-Initialisierung aus `outlook_email_exporter.py` aufgerufen.
 """
 
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox, QHeaderView
 from PySide6.QtCore import QTimer
 from logger import log
 from outlook_connector import get_outlook_postfaecher, get_outlook_ordner
+from mail_reader import lade_emails
+from email_table_model import EmailTableModel
 
 def connect_gui_signals(gui):
     """Verbindet GUI-Elemente mit den zugehörigen Funktionen und initialisiert Inhalte."""
@@ -110,13 +112,51 @@ def on_postfach_changed(gui, index):
 
 
 def on_verzeichnis_changed(gui, index):
-    """Entfernt den Platzhaltereintrag aus der Verzeichnis-ComboBox, wenn ein Ordner ausgewählt wurde."""
+    """Reaktion auf Verzeichniswahl: Checkbox-Platzhalter entfernen + Tabelle befüllen."""
     if index > 0:
+        # Platzhalter entfernen
         placeholder_text = "Bitte Verzeichnis auswählen..."
         placeholder_index = gui.combo_verzeichnis.findText(placeholder_text)
         if placeholder_index != -1:
             gui.combo_verzeichnis.removeItem(placeholder_index)
             log("ℹ️ Platzhalter 'Bitte Verzeichnis auswählen...' entfernt", level=2)
+
+        # E-Mail-Tabelle vorbereiten
+        postfach_name = gui.combo_postfach.currentText()
+        ordner_pfad = gui.combo_verzeichnis.currentText()
+
+        # 🧠 Fehlervermeidung: Postfachname aus Pfad entfernen (falls enthalten)
+        if ordner_pfad.startswith(postfach_name + "/"):
+            ordner_pfad = ordner_pfad[len(postfach_name) + 1:]
+
+        log(f"📨 Starte Mail-Import für Postfach='{postfach_name}', Ordner='{ordner_pfad}'", level=2)
+
+        emails = lade_emails(postfach_name, ordner_pfad)
+        log(f"📊 Tabelle wird mit {len(emails)} E-Mails befüllt", level=2)
+
+        model = EmailTableModel(emails)
+        gui.table_view.setModel(model)
+
+        # Tabellenkopf vorbereiten
+        header = gui.table_view.horizontalHeader()
+        header.setStretchLastSection(False)
+
+        # Resize-Strategie je Spalte
+        header.setSectionResizeMode(0, QHeaderView.Fixed)  # Checkbox
+        header.setSectionResizeMode(1, QHeaderView.Interactive)  # Datum
+        header.setSectionResizeMode(2, QHeaderView.Interactive)  # Name
+        header.setSectionResizeMode(3, QHeaderView.Interactive)  # E-Mail
+        header.setSectionResizeMode(4, QHeaderView.Stretch)  # Betreff
+
+        # Mindestbreiten setzen
+        # Individuelle Mindestbreiten pro Spalte
+        header.setMinimumSectionSize(10)  # kleiner Basisschutz
+        gui.table_view.setColumnWidth(0, 26)  # Checkbox wirklich schmal
+        gui.table_view.setColumnWidth(1, 120)
+        gui.table_view.setColumnWidth(2, 180)
+        gui.table_view.setColumnWidth(3, 220)
+
+        gui.table_view.setEnabled(True)
 
 
 def on_exit_clicked():
