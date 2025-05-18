@@ -1,3 +1,13 @@
+"""
+outlook_connector.py
+
+Dieses Modul stellt Funktionen zum Zugriff auf Outlook bereit (via COM-Interface `win32com`).
+Aktuell wird eine Liste aller verfügbaren Postfächer im Profil zurückgegeben – unter Berücksichtigung
+einer Ausschlussliste aus der Konfiguration (`IGNORE_POSTFAECHER`).
+
+Fehler wie z. B. ein blockierter Outlook-Prozess oder ein fehlendes Profil werden robust behandelt
+und im Log dokumentiert.
+"""
 import win32com.client
 from logger import log
 from config import IGNORE_POSTFAECHER

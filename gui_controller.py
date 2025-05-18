@@ -1,3 +1,16 @@
+"""
+gui_controller.py
+
+Dieses Modul verknüpft die grafischen Bedienelemente (Buttons, ComboBox etc.) mit
+der dahinterliegenden Logik und den Outlook-Funktionen. Es kapselt Interaktionslogik wie:
+
+- Exit-Button und Menübindung
+- zeitverzögertes Laden der Postfächer (Outlook)
+- Platzhalter-Handling in der Postfachauswahl
+- Benutzerhinweise bei Outlook-Problemen (QMessageBox)
+
+Wird direkt nach GUI-Initialisierung aus `outlook_email_exporter.py` aufgerufen.
+"""
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QMessageBox

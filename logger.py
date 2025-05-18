@@ -1,14 +1,11 @@
-# logger.py
-
 """
-Dieses Modul bietet eine Logging-Funktion, um Ereignisse in einer Logdatei aufzuzeichnen.
-Es unterstützt eine einstellbare Debug-Ebene (DEBUG_LEVEL) zur Steuerung der Detailtiefe
-der protokollierten Informationen.
+logger.py
 
-Hauptfunktionen:
-- Protokolliert Nachrichten mit einem Zeitstempel, Dateinamen und Zeilennummer.
-- Unterstützt verschiedene Logging-Ebenen, um die Ausgabe detailliert zu steuern.
-- Alte Logdateien werden beim Start der Anwendung automatisch gelöscht.
+Dieses Modul stellt eine Logging-Funktion bereit, um Ereignisse mit Zeitstempel, Dateinamen
+und Zeilennummer zu protokollieren.
+
+Die Logdatei wird bei jedem Programmstart neu erstellt.
+Das Logging-Level kann über die `.env`-Datei gesteuert werden.
 """
 
 import os

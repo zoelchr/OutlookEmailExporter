@@ -1,11 +1,11 @@
 """
 outlook_email_exporter.py
 
-Dieses Skript ist der Einstiegspunkt für die Outlook Email Exporter-Anwendung.
-Es initialisiert die grafische Benutzeroberfläche (GUI) mithilfe von PySide6 und startet das Hauptfenster,
-mit dem Benutzer E-Mails aus Outlook exportieren können.
-"""
+Hauptskript zum Starten der Anwendung. Es initialisiert das Qt-Framework, lädt die GUI,
+verbindet alle Steuersignale (über `gui_controller`) und startet die Ereignisschleife.
 
+Dieses Modul dient als zentraler Einstiegspunkt für das gesamte Outlook-Export-Tool.
+"""
 from PySide6.QtWidgets import QApplication  # Importiert die QApplication-Klasse, die erforderlich ist, um eine Qt-Anwendung zu erstellen
 from ui_loader import MailGUI               # Importiert das MailGUI-Hauptfenster aus dem Modul ui_loader
 import sys                                  # Importiert das sys-Modul, um Zugriff auf Argumente und Systemfunktionen zu erhalten

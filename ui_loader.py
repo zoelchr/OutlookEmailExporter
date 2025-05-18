@@ -1,9 +1,11 @@
 """
 ui_loader.py
 
-Dieses Modul ist für das Laden und Initiieren der grafischen Benutzeroberfläche (GUI) verantwortlich.
-Es implementiert die Klasse `MailGUI`, welche das Hauptfenster der Anwendung darstellt und alle zentralen 
-Widgets für Benutzerinteraktionen bereitstellt.
+Dieses Modul ist zuständig für das dynamische Laden der grafischen Benutzeroberfläche
+aus einer `.ui`-Datei (erstellt mit Qt Designer).
+
+Die Klasse `MailGUI` stellt das zentrale GUI-Fenster dar, bindet alle relevanten Widgets
+(z. B. Buttons, ComboBoxen, Tabellenansicht) und aktiviert die Statusleiste für Debug-Ausgaben.
 """
 
 import os                                   # Ermöglicht den Zugriff auf das Dateisystem
