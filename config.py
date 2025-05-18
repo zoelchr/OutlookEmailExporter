@@ -14,3 +14,4 @@ load_dotenv()
 DEBUG_LEVEL = int(os.getenv("DEBUG_LEVEL", "0"))  # Debug-Level zur Steuerung der Protokollausgabe
 LOG_FILE = os.getenv("LOG_FILE", "debug.log")    # Name der Logdatei
 EXPORT_PATH = os.getenv("EXPORT_PATH", "./export")  # Standard-Exportpfad für gespeicherte Dateien
+IGNORE_POSTFAECHER = [s.strip() for s in os.getenv("IGNORE_POSTFAECHER", "").split(",") if s.strip()]

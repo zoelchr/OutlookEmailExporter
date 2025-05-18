@@ -13,6 +13,8 @@ import sys                                  # Importiert das sys-Modul, um Zugri
 from logger import log                      # Importiert die benutzerdefinierte Log-Funktion zur Protokollierung
 from config import EXPORT_PATH              # Importiert den Exportpfad aus den Konfigurationsdateien
 
+from gui_controller import connect_gui_signals
+
 # Protokollierung des Programmstarts für Debugging und Nachvollziehbarkeit
 log("Programmstart", level=1)
 log("GUI wird geladen...", level=2)
@@ -25,6 +27,9 @@ if __name__ == "__main__":
     
     # Initialisiert und zeigt das Hauptfenster der Anwendung an
     window = MailGUI()
+
+    connect_gui_signals(window)
+
     window.show()
     
     # Startet die Ereignisschleife der GUI-Anwendung und beendet das Programm,
