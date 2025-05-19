@@ -1,3 +1,5 @@
+import logging
+app_logger = logging.getLogger(__name__)
 """
 outlook_connector.py
 
@@ -9,43 +11,42 @@ Fehler wie z. B. ein blockierter Outlook-Prozess oder ein fehlendes Profil wer
 und im Log dokumentiert.
 """
 import win32com.client
-from logger import log
 from config import IGNORE_POSTFAECHER
 from config import EXCLUDE_FOLDERNAMES
 
 def get_outlook_postfaecher():
     try:
-        log("📥 Starte Zugriff auf Outlook", level=2)
+        app_logger.info("📥 Starte Zugriff auf Outlook")
 
         try:
             outlook = win32com.client.Dispatch("Outlook.Application")
         except Exception as dispatch_error:
-            log(f"❌ Outlook konnte nicht gestartet oder verbunden werden: {dispatch_error}", level=0)
+            app_logger.error(f"❌ Outlook konnte nicht gestartet oder verbunden werden: {dispatch_error}")
             return []
 
-        log("🔌 Outlook.Application instanziiert", level=2)
+        app_logger.info("🔌 Outlook.Application instanziiert")
 
         try:
             namespace = outlook.GetNamespace("MAPI")
             stores = namespace.Stores
-            log(f"📂 Anzahl Stores: {stores.Count}", level=2)
+            app_logger.info(f"📂 Anzahl Stores: {stores.Count}")
         except Exception as ns_error:
-            log(f"❌ Fehler beim Zugriff auf Outlook-Namespace: {ns_error}", level=0)
+            app_logger.error(f"❌ Fehler beim Zugriff auf Outlook-Namespace: {ns_error}")
             return []
 
         postfaecher = []
 
         for i in range(stores.Count):
             store = stores.Item(i + 1)
-            log(f"🔍 Prüfe Store: {store.DisplayName}", level=3)
+            app_logger.debug(f"🔍 Prüfe Store: {store.DisplayName}")
             if store.DisplayName not in IGNORE_POSTFAECHER:
                 postfaecher.append(store.DisplayName)
 
-        log(f"📬 {len(postfaecher)} Postfächer gefunden", level=2)
+        app_logger.info(f"📬 {len(postfaecher)} Postfächer gefunden")
         return postfaecher
 
     except Exception as e:
-        log(f"❌ Allgemeiner Fehler beim Outlook-Zugriff: {e}", level=0)
+        app_logger.error(f"❌ Allgemeiner Fehler beim Outlook-Zugriff: {e}")
         return []
 
 
@@ -56,7 +57,7 @@ def get_outlook_ordner(postfach_name):
     - keine ausgeschlossenen Namen enthalten (EXCLUDE_FOLDERNAMES).
     """
     try:
-        log(f"📥 Beginne Ordnerabfrage für Postfach: {postfach_name}", level=2)
+        app_logger.info(f"📥 Beginne Ordnerabfrage für Postfach: {postfach_name}")
 
         outlook = win32com.client.Dispatch("Outlook.Application")
         namespace = outlook.GetNamespace("MAPI")
@@ -70,7 +71,7 @@ def get_outlook_ordner(postfach_name):
 
             # Ausschluss durch Namensfilter
             if any(blocked in folder_name_lower for blocked in EXCLUDE_FOLDERNAMES):
-                log(f"⛔️ Ordner ausgeschlossen (Name gefiltert): {full_path}", level=3)
+                app_logger.debug(f"⛔️ Ordner ausgeschlossen (Name gefiltert): {full_path}")
                 return
 
             # Nur Ordner mit Inhalt (E-Mails oder Elemente)
@@ -81,9 +82,9 @@ def get_outlook_ordner(postfach_name):
 
             if item_count > 0:
                 ordnerliste.append(full_path)
-                log(f"✅ Ordner akzeptiert: {full_path} ({item_count} Elemente)", level=3)
+                app_logger.debug(f"✅ Ordner akzeptiert: {full_path} ({item_count} Elemente)")
             else:
-                log(f"🚫 Ordner ohne Inhalt übersprungen: {full_path}", level=3)
+                app_logger.debug(f"🚫 Ordner ohne Inhalt übersprungen: {full_path}")
 
             # Rekursiv prüfen
             for subfolder in folder.Folders:
@@ -91,9 +92,9 @@ def get_outlook_ordner(postfach_name):
 
         collect_folder_names(root_folder)
 
-        log(f"📂 {len(ordnerliste)} relevante Ordner für '{postfach_name}' gefunden", level=2)
+        app_logger.info(f"📂 {len(ordnerliste)} relevante Ordner für '{postfach_name}' gefunden")
         return ordnerliste
 
     except Exception as e:
-        log(f"❌ Fehler beim Laden der Ordner für '{postfach_name}': {e}", level=0)
+        app_logger.error(f"❌ Fehler beim Laden der Ordner für '{postfach_name}': {e}")
         return []

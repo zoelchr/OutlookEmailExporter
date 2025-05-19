@@ -1,3 +1,5 @@
+import logging
+app_logger = logging.getLogger(__name__)
 """
 email_table_model.py
 
@@ -21,6 +23,7 @@ class EmailTableModel(QAbstractTableModel):
         super().__init__(parent)
         self.emails = emails
         self.checked_rows = [False] * len(emails)
+        app_logger.debug(f"{len(emails)} E-Mails im Modell initialisiert")
 
     def rowCount(self, parent=QModelIndex()):
         return len(self.emails)
@@ -59,7 +62,7 @@ class EmailTableModel(QAbstractTableModel):
             return None
 
         headers = ["✓", "Datum & Uhrzeit", "Absendername", "Absender-E-Mail", "Betreff"]
-        return headers[section] if section < len(headers) else QVariant()
+        return headers[section] if section < len(headers) else None
 
     def flags(self, index):
         if not index.isValid():
@@ -77,6 +80,7 @@ class EmailTableModel(QAbstractTableModel):
 
         row = index.row()
         col = index.column()
+        app_logger.debug(f"setData(): Zeile={row}, Wert={value}, Rolle={role}")
 
         if col == 0 and role == Qt.CheckStateRole:
             self.checked_rows[row] = value == Qt.Checked
@@ -86,12 +90,33 @@ class EmailTableModel(QAbstractTableModel):
         return False
 
     def get_selected_emails(self):
-        """Gibt eine Liste der ausgewählten E-Mail-Objekte zurück"""
-        return [email for i, email in enumerate(self.emails) if self.checked_rows[i]]
+        selected = [email for i, email in enumerate(self.emails) if self.checked_rows[i]]
+        app_logger.debug(f"{len(selected)} E-Mails ausgewählt")
+        return selected
 
     def reset_data(self, emails: list[Email]):
-        """Setzt das Modell neu mit einer anderen Liste von E-Mails"""
+        app_logger.debug(f"reset_data(): {len(emails)} E-Mails werden gesetzt")
         self.beginResetModel()
         self.emails = emails
         self.checked_rows = [False] * len(emails)
         self.endResetModel()
+        app_logger.debug("Modell erfolgreich zurückgesetzt")
+
+    def sort(self, column, order):
+        reverse = order == Qt.DescendingOrder
+        app_logger.debug(f"Sortierung ausgelöst: Spalte={column}, Richtung={'absteigend' if reverse else 'aufsteigend'}")
+
+        if column == 1:
+            self.emails.sort(key=lambda email: email.received, reverse=reverse)
+        elif column == 2:
+            self.emails.sort(key=lambda email: email.sender_name.lower(), reverse=reverse)
+        elif column == 3:
+            self.emails.sort(key=lambda email: email.sender_email.lower(), reverse=reverse)
+        elif column == 4:
+            self.emails.sort(key=lambda email: email.subject.lower(), reverse=reverse)
+        else:
+            app_logger.debug("Sortierung übersprungen (Checkbox-Spalte)")
+            return
+
+        self.layoutChanged.emit()
+        app_logger.debug("Tabellenlayout nach Sortierung aktualisiert")

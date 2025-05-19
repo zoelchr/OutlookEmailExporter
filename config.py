@@ -1,3 +1,5 @@
+import logging
+app_logger = logging.getLogger(__name__)
 """
 config.py
 
@@ -29,4 +31,3 @@ IGNORE_POSTFAECHER = [s.strip() for s in os.getenv("IGNORE_POSTFAECHER", "").spl
 # Liste von Begriffen, bei denen ein Ordnername ausgeschlossen wird (case-insensitive)
 # Beispiel: "Kalender, Kontakte" → schließt alle Ordner aus, die diese Begriffe im Namen tragen
 EXCLUDE_FOLDERNAMES = [s.strip().lower() for s in os.getenv("EXCLUDE_FOLDERNAMES", "").split(",") if s.strip()]
-

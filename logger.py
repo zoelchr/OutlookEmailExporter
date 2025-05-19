@@ -1,54 +1,48 @@
-"""
-logger.py
-
-Dieses Modul stellt eine Logging-Funktion bereit, um Ereignisse mit Zeitstempel, Dateinamen
-und Zeilennummer zu protokollieren.
-
-Die Logdatei wird bei jedem Programmstart neu erstellt.
-Das Logging-Level kann über die `.env`-Datei gesteuert werden.
-"""
+# logger.py
 
 import os
-import datetime
-import inspect
-from config import LOG_FILE, DEBUG_LEVEL  # Importiert Logdateipfad und Debug-Level-Konfiguration
+import logging
+from config import LOG_FILE, DEBUG_LEVEL
 
-# Entfernt die alte Logdatei, falls sie existiert, um bei jedem Start eine neue zu erzeugen
-if os.path.exists(LOG_FILE):
-    os.remove(LOG_FILE)
+# Konsolen-Logging zusätzlich aktivieren
+log_to_console = os.getenv("LOG_TO_CONSOLE", "false").lower() == "true"
 
-def log(message, level=1):
-    """
-    Protokolliert eine Nachricht in die Logdatei mit Zeitstempel, Modulnamen und Zeilennummer.
-    
-    Parameter:
-    - message (str): Die zu protokollierende Nachricht.
-    - level (int): Die Wichtigkeitsstufe der Nachricht (je höher, desto detaillierter).
-                   Nachrichten werden nur protokolliert, wenn `level` kleiner oder gleich dem
-                   DEBUG_LEVEL aus der Konfiguration ist.
-    
-    Details:
-    - Die Funktion ermittelt dynamisch Dateiname und Zeilennummer des Funktionsaufrufs, 
-      um die Protokollierung zu präzisieren.
-    - Nachrichten mit einer Wichtigkeitsstufe, die über dem aktuellen DEBUG_LEVEL liegen,
-      werden ignoriert.
-    """
+# 🔁 Vorherige Handler vollständig entfernen, damit basicConfig garantiert greift
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
 
-    # Überspringt das Logging, wenn die Nachricht unter die aktuell konfigurierten Log-Ebenen fällt
-    if level > DEBUG_LEVEL:
-        return
+# 🔢 Mappe benutzerdefinierten DEBUG_LEVEL auf echtes logging-Level
+LEVEL_MAP = {
+    0: logging.ERROR,
+    1: logging.WARNING,
+    2: logging.INFO,
+    3: logging.DEBUG,
+}
+log_level = LEVEL_MAP.get(DEBUG_LEVEL, logging.INFO)
 
-    # Ermittelt die Aufrufinformationen (Dateiname und Zeilennummer), um den Ursprungsort zu identifizieren
-    frame = inspect.currentframe().f_back
-    filename = os.path.basename(frame.f_code.co_filename)  # Extrahiert nur den Dateinamen
-    lineno = frame.f_lineno  # Zeilennummer des Log-Aufrufs
+# 🗑 Alte Log-Datei löschen (bei jedem Start)
+try:
+    if os.path.exists(LOG_FILE):
+        os.remove(LOG_FILE)
+except Exception as e:
+    print(f"⚠️ Konnte alte Logdatei nicht löschen: {e}")
 
-    # Erstellt einen Zeitstempel für die Logzeile
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+# 📝 Logging-Grundkonfiguration (Datei)
+logging.basicConfig(
+    level=log_level,
+    format='[%(asctime)s] [%(levelname)s] [%(name)s:%(lineno)d] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    filename=LOG_FILE,
+    filemode='a',  # Datei neu erzeugen (weil oben gelöscht)
+    encoding='utf-8'
+)
 
-    # Formatiert die Lognachricht mit Zeitstempel, Dateinamen und Zeilennummer
-    log_entry = f"[{timestamp}] [{filename}:{lineno}] {message}"
+# 🖥 Konsolen-Logging zusätzlich aktivieren
+if log_to_console:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
+    console_handler.setFormatter(logging.Formatter('[%(levelname)s] %(message)s'))
+    logging.getLogger().addHandler(console_handler)
 
-    # Schreibt die Lognachricht in die Logdatei (Anhängen der neuen Einträge)
-    with open(LOG_FILE, "a", encoding="utf-8") as log_file:
-        log_file.write(log_entry + "\n")
+# 🧪 Testausgabe – wird in Logdatei UND Konsole erscheinen
+logging.getLogger(__name__).debug("🧪 Logging-Konfiguration abgeschlossen")

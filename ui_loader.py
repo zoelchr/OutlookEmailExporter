@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 ui_loader.py
 
@@ -8,31 +10,38 @@ Die Klasse `MailGUI` stellt das zentrale GUI-Fenster dar, bindet alle relevanten
 (z. B. Buttons, ComboBoxen, Tabellenansicht) und aktiviert die Statusleiste für Debug-Ausgaben.
 """
 
-import os                                   # Ermöglicht den Zugriff auf das Dateisystem
-from PySide6.QtUiTools import QUiLoader    # Lädt zur Laufzeit UI-Designs aus .ui-Dateien
+import os  # Ermöglicht den Zugriff auf das Dateisystem
+from PySide6.QtUiTools import QUiLoader  # Lädt zur Laufzeit UI-Designs aus .ui-Dateien
 from PySide6.QtWidgets import QMainWindow, QComboBox, QPushButton, QTableView  # GUI-Komponenten
 from PySide6.QtCore import QFile, QObject, Qt  # Nützliche Klassen und Konstanten für GUI-Funktionen
 
-from config import DEBUG_LEVEL             # Importiert die Konfiguration des Debug-Levels
-from logger import log                     # Importiert die benutzerdefinierte Logging-Funktion
+from config import DEBUG_LEVEL  # Importiert die Konfiguration des Debug-Levels
+
+LEVEL_NAME_MAP = {
+    0: "ERROR",
+    1: "WARNING",
+    2: "INFO",
+    3: "DEBUG",
+}
 
 class MailGUI(QMainWindow):
     """
-    Die Klasse `MailGUI` repräsentiert das Hauptfenster der Anwendung. 
+    Die Klasse `MailGUI` repräsentiert das Hauptfenster der Anwendung.
     Sie lädt die Benutzeroberfläche zur Laufzeit und verwaltet zentrale GUI-Komponenten.
     """
+
     def __init__(self):
         super().__init__()
 
         # Initialisiert den UI-Loader
         loader = QUiLoader()  # Dynamisches Laden der .ui-Datei
         pfad_ui = os.path.join(os.path.dirname(__file__), "outlook_email_exporter.ui")
-        log(f"📄 Lade UI-Datei: {pfad_ui}", level=2)
+        logger.info(f"📄 Lade UI-Datei: {pfad_ui}")
 
         # Öffnet und prüft die .ui-Datei auf Existenz
         ui_file = QFile(pfad_ui)
         if not ui_file.exists():
-            log("❌ UI-Datei nicht gefunden!", level=0)  # Ausgabe bei fehlender Datei
+            logger.error("❌ UI-Datei nicht gefunden!")  # Ausgabe bei fehlender Datei
             return
 
         # Lädt das UI aus der Datei
@@ -42,16 +51,17 @@ class MailGUI(QMainWindow):
 
         # Prüft, ob das UI erfolgreich geladen wurde
         if not self.ui:
-            log("❌ Fehler beim Laden der UI!", level=0)
+            logger.error("❌ Fehler beim Laden der UI!")
             return
 
         # Setzt das geladene Layout als zentrales Widget des Fensters
         self.setCentralWidget(self.ui)
-        log("✅ UI-Datei erfolgreich geladen", level=1)
+        logger.info("✅ UI-Datei erfolgreich geladen")
 
         # Initialisiert die Statusleiste zur Anzeige von Debug-Informationen
-        self.statusBar().showMessage(f"Debug-Level: {DEBUG_LEVEL}")
-        log("📊 Statusleiste mit Debug-Level aktualisiert", level=3)
+        level_name = LEVEL_NAME_MAP.get(DEBUG_LEVEL, f"Unbekannt ({DEBUG_LEVEL})")
+        self.statusBar().showMessage(f"Debug-Level: {level_name}")
+        logger.debug("📊 Statusleiste mit Debug-Level aktualisiert")
 
         # Helfermethode zum Binden von Widgets mit Protokollierung
         def bind_widget(widget_class, name, level=2):
@@ -60,9 +70,9 @@ class MailGUI(QMainWindow):
             """
             widget = self.ui.findChild(widget_class, name, Qt.FindChildrenRecursively)
             if widget:
-                log(f"✅ Widget gebunden: {name}", level=level)
+                logger.debug(f"✅ Widget gebunden: {name}")
             else:
-                log(f"⚠️ Widget NICHT gefunden: {name}", level=0)
+                logger.warning(f"⚠️ Widget NICHT gefunden: {name}")
             return widget
 
         # Bindet zentrale Widgets der Anwendung für spätere Interaktionen
@@ -77,8 +87,11 @@ class MailGUI(QMainWindow):
         self.table_view = bind_widget(QTableView, "tableView_Emails")
         self.action_exit = bind_widget(QObject, "actionExit")
 
-        # Ausgabe von Widgets für Debugging (optional, deaktiviert)
-        # for child in self.ui.findChildren(QObject):
-        #     print(child.objectName())
-        
-        log("🟢 MailGUI erfolgreich initialisiert", level=1)
+        # Ausgabe von Widgets für Debugging
+        logger.debug("Gefundene QObjects:")
+        for child in self.ui.findChildren(QObject):
+            cls_name = child.metaObject().className()
+            obj_name = child.objectName()
+            logger.debug(f"- {cls_name}: {obj_name if obj_name else '(kein Name)'}")
+
+        logger.info("🟢 MailGUI erfolgreich initialisiert")

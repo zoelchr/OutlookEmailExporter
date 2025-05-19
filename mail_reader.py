@@ -1,3 +1,5 @@
+import logging
+app_logger = logging.getLogger(__name__)
 """
 mail_reader.py
 
@@ -9,7 +11,6 @@ Die Mails können dann z. B. in einer Tabelle angezeigt, ausgewählt oder expo
 
 import win32com.client
 from email_model import Email
-from logger import log
 
 def lade_emails(postfach_name: str, ordner_pfad: str) -> list[Email]:
     """
@@ -25,7 +26,7 @@ def lade_emails(postfach_name: str, ordner_pfad: str) -> list[Email]:
     emails = []
 
     try:
-        log(f"📨 Lese Mails aus: Postfach='{postfach_name}' | Ordner='{ordner_pfad}'", level=2)
+        app_logger.info(f"📨 Lese Mails aus: Postfach='{postfach_name}' | Ordner='{ordner_pfad}'")
 
         outlook = win32com.client.Dispatch("Outlook.Application")
         namespace = outlook.GetNamespace("MAPI")
@@ -48,9 +49,9 @@ def lade_emails(postfach_name: str, ordner_pfad: str) -> list[Email]:
                 )
                 emails.append(email)
 
-        log(f"📧 {len(emails)} Mails geladen", level=2)
+        app_logger.info(f"📧 {len(emails)} Mails geladen")
         return emails
 
     except Exception as e:
-        log(f"❌ Fehler beim Lesen von Mails: {e}", level=0)
+        app_logger.error(f"❌ Fehler beim Lesen von Mails: {e}")
         return []

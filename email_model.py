@@ -1,3 +1,5 @@
+import logging
+app_logger = logging.getLogger(__name__)
 """
 email_model.py
 

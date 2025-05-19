@@ -1,3 +1,6 @@
+import logger
+import logging
+app_logger = logging.getLogger(__name__)  # dein echter Logger
 """
 outlook_email_exporter.py
 
@@ -10,15 +13,14 @@ from PySide6.QtWidgets import QApplication  # Importiert die QApplication-Klasse
 from ui_loader import MailGUI               # Importiert das MailGUI-Hauptfenster aus dem Modul ui_loader
 import sys                                  # Importiert das sys-Modul, um Zugriff auf Argumente und Systemfunktionen zu erhalten
 
-from logger import log                      # Importiert die benutzerdefinierte Log-Funktion zur Protokollierung
 from config import EXPORT_PATH              # Importiert den Exportpfad aus den Konfigurationsdateien
 
 from gui_controller import connect_gui_signals
 
 # Protokollierung des Programmstarts für Debugging und Nachvollziehbarkeit
-log("Programmstart", level=1)
-log("GUI wird geladen...", level=2)
-log(f"Exportpfad laut .env: {EXPORT_PATH}", level=3)
+app_logger.debug("Programmstart")
+app_logger.debug("GUI wird geladen...")
+app_logger.debug(f"Exportpfad laut .env: {EXPORT_PATH}")
 
 # Hauptskriptblock: wird nur ausgeführt, wenn dieses Skript direkt gestartet wird
 if __name__ == "__main__":

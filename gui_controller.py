@@ -1,3 +1,5 @@
+import logging
+app_logger = logging.getLogger(__name__)
 """
 gui_controller.py
 
@@ -14,31 +16,30 @@ Wird direkt nach GUI-Initialisierung aus `outlook_email_exporter.py` aufgerufen.
 """
 
 from PySide6.QtWidgets import QApplication, QMessageBox, QHeaderView
-from PySide6.QtCore import QTimer
-from logger import log
+from PySide6.QtCore import QTimer, Qt
 from outlook_connector import get_outlook_postfaecher, get_outlook_ordner
 from mail_reader import lade_emails
 from email_table_model import EmailTableModel
 
 def connect_gui_signals(gui):
     """Verbindet GUI-Elemente mit den zugehörigen Funktionen und initialisiert Inhalte."""
-    log("🔗 GUI-Events werden verbunden...", level=2)
+    app_logger.info("🔗 GUI-Events werden verbunden...")
 
     # Exit-Button
     if gui.button_exit:
         try:
             gui.button_exit.clicked.connect(on_exit_clicked)
-            log("✅ Exit-Button verbunden", level=2)
+            app_logger.debug("✅ Exit-Button verbunden")
         except Exception as e:
-            log(f"❌ Fehler beim Verbinden des Exit-Buttons: {e}", level=0)
+            app_logger.error(f"❌ Fehler beim Verbinden des Exit-Buttons: {e}")
 
     # Menüeintrag "Exit"
     if gui.action_exit:
         try:
             gui.action_exit.triggered.connect(on_exit_clicked)
-            log("✅ Menü 'Exit' verbunden", level=2)
+            app_logger.debug("✅ Menü 'Exit' verbunden")
         except Exception as e:
-            log(f"❌ Fehler beim Verbinden des Menü-Exit: {e}", level=0)
+            app_logger.error(f"❌ Fehler beim Verbinden des Menü-Exit: {e}")
 
     # Verzeichnis-ComboBox deaktivieren, bis ein Postfach ausgewählt wurde
     if gui.combo_verzeichnis:
@@ -46,17 +47,17 @@ def connect_gui_signals(gui):
 
     # Outlook-Postfächer asynchron laden (verhindert GUI-Blockade)
     QTimer.singleShot(200, lambda: load_postfaecher_async(gui))
-    log("🕒 Outlook-Ladevorgang geplant (200ms Verzögerung)", level=2)
+    app_logger.debug("🕒 Outlook-Ladevorgang geplant (200ms Verzögerung)")
 
 
 def load_postfaecher_async(gui):
     """Lädt Outlook-Postfächer und initialisiert die ComboBox."""
     try:
-        log("📥 Beginne asynchronen Outlook-Zugriff", level=2)
+        app_logger.debug("📥 Beginne asynchronen Outlook-Zugriff")
         postfaecher = get_outlook_postfaecher()
 
         if not postfaecher:
-            log("⚠️ Keine Postfächer geladen – Outlook möglicherweise nicht erreichbar", level=1)
+            app_logger.warning("⚠️ Keine Postfächer geladen – Outlook möglicherweise nicht erreichbar")
             QMessageBox.warning(
                 gui,
                 "Outlook-Verbindung fehlgeschlagen",
@@ -79,10 +80,10 @@ def load_postfaecher_async(gui):
                 lambda index: on_postfach_changed(gui, index)
             )
 
-            log("📋 Postfächer erfolgreich geladen und verbunden", level=2)
+            app_logger.info("📋 Postfächer erfolgreich geladen und verbunden")
 
     except Exception as e:
-        log(f"❌ Fehler beim Laden der Outlook-Postfächer: {e}", level=0)
+        app_logger.error(f"❌ Fehler beim Laden der Outlook-Postfächer: {e}")
 
 
 def on_postfach_changed(gui, index):
@@ -92,7 +93,7 @@ def on_postfach_changed(gui, index):
         placeholder_index = gui.combo_postfach.findText(placeholder_text)
         if placeholder_index != -1:
             gui.combo_postfach.removeItem(placeholder_index)
-            log("ℹ️ Platzhalter 'Bitte Postfach auswählen...' entfernt", level=2)
+            app_logger.debug("ℹ️ Platzhalter 'Bitte Postfach auswählen...' entfernt")
 
         # Ordnerstruktur abrufen
         postfach_name = gui.combo_postfach.currentText()
@@ -108,7 +109,7 @@ def on_postfach_changed(gui, index):
             gui.combo_verzeichnis.currentIndexChanged.connect(
                 lambda index: on_verzeichnis_changed(gui, index)
             )
-            log(f"📂 {len(verzeichnisse)} Verzeichnisse für '{postfach_name}' geladen", level=2)
+            app_logger.info(f"📂 {len(verzeichnisse)} Verzeichnisse für '{postfach_name}' geladen")
 
 
 def on_verzeichnis_changed(gui, index):
@@ -119,7 +120,7 @@ def on_verzeichnis_changed(gui, index):
         placeholder_index = gui.combo_verzeichnis.findText(placeholder_text)
         if placeholder_index != -1:
             gui.combo_verzeichnis.removeItem(placeholder_index)
-            log("ℹ️ Platzhalter 'Bitte Verzeichnis auswählen...' entfernt", level=2)
+            app_logger.debug("ℹ️ Platzhalter 'Bitte Verzeichnis auswählen...' entfernt")
 
         # E-Mail-Tabelle vorbereiten
         postfach_name = gui.combo_postfach.currentText()
@@ -129,13 +130,16 @@ def on_verzeichnis_changed(gui, index):
         if ordner_pfad.startswith(postfach_name + "/"):
             ordner_pfad = ordner_pfad[len(postfach_name) + 1:]
 
-        log(f"📨 Starte Mail-Import für Postfach='{postfach_name}', Ordner='{ordner_pfad}'", level=2)
+        app_logger.debug(f"📨 Starte Mail-Import für Postfach='{postfach_name}', Ordner='{ordner_pfad}'")
 
         emails = lade_emails(postfach_name, ordner_pfad)
-        log(f"📊 Tabelle wird mit {len(emails)} E-Mails befüllt", level=2)
+        app_logger.info(f"📊 Tabelle wird mit {len(emails)} E-Mails befüllt")
 
         model = EmailTableModel(emails)
         gui.table_view.setModel(model)
+
+        gui.table_view.setSortingEnabled(True)
+        gui.table_view.sortByColumn(1, Qt.DescendingOrder)  # nach Datum sortieren (Spalte 1)
 
         # Tabellenkopf vorbereiten
         header = gui.table_view.horizontalHeader()
@@ -161,5 +165,5 @@ def on_verzeichnis_changed(gui, index):
 
 def on_exit_clicked():
     """Beendet das Programm."""
-    log("🛑 Exit ausgelöst – Anwendung wird beendet", level=1)
+    app_logger.debug("🛑 Exit ausgelöst – Anwendung wird beendet")
     QApplication.quit()
