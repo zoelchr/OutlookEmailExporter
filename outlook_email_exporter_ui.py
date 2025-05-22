@@ -1,0 +1,165 @@
+# -*- coding: utf-8 -*-
+
+################################################################################
+## Form generated from reading UI file 'outlook_email_exporter.ui'
+##
+## Created by: Qt User Interface Compiler version 6.9.0
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
+
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
+    QCursor, QFont, QFontDatabase, QGradient,
+    QIcon, QImage, QKeySequence, QLinearGradient,
+    QPainter, QPalette, QPixmap, QRadialGradient,
+    QTransform)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
+    QHeaderView, QLabel, QLayout, QMainWindow,
+    QMenu, QMenuBar, QPushButton, QSizePolicy,
+    QSpacerItem, QStatusBar, QTableView, QVBoxLayout,
+    QWidget)
+
+class Ui_MyMainWindow(object):
+    def setupUi(self, MyMainWindow):
+        if not MyMainWindow.objectName():
+            MyMainWindow.setObjectName(u"MyMainWindow")
+        MyMainWindow.resize(1000, 603)
+        MyMainWindow.setMinimumSize(QSize(1000, 600))
+        self.actionExit = QAction(MyMainWindow)
+        self.actionExit.setObjectName(u"actionExit")
+        self.centralwidget = QWidget(MyMainWindow)
+        self.centralwidget.setObjectName(u"centralwidget")
+        self.gridLayout = QGridLayout(self.centralwidget)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.pushButton_Export_MSG = QPushButton(self.centralwidget)
+        self.pushButton_Export_MSG.setObjectName(u"pushButton_Export_MSG")
+        self.pushButton_Export_MSG.setMaximumSize(QSize(120, 23))
+
+        self.gridLayout.addWidget(self.pushButton_Export_MSG, 2, 0, 1, 1)
+
+        self.pushButton_Export_PDF = QPushButton(self.centralwidget)
+        self.pushButton_Export_PDF.setObjectName(u"pushButton_Export_PDF")
+        self.pushButton_Export_PDF.setMaximumSize(QSize(120, 23))
+
+        self.gridLayout.addWidget(self.pushButton_Export_PDF, 2, 1, 1, 1)
+
+        self.pushButton_Exit = QPushButton(self.centralwidget)
+        self.pushButton_Exit.setObjectName(u"pushButton_Exit")
+        self.pushButton_Exit.setEnabled(True)
+        self.pushButton_Exit.setMaximumSize(QSize(100, 23))
+
+        self.gridLayout.addWidget(self.pushButton_Exit, 2, 6, 1, 1)
+
+        self.verticalLayout_2 = QVBoxLayout()
+        self.verticalLayout_2.setSpacing(5)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setSizeConstraint(QLayout.SizeConstraint.SetDefaultConstraint)
+        self.verticalLayout_2.setContentsMargins(5, 5, 5, 5)
+        self.label_Tabelle = QLabel(self.centralwidget)
+        self.label_Tabelle.setObjectName(u"label_Tabelle")
+
+        self.verticalLayout_2.addWidget(self.label_Tabelle)
+
+        self.tableView_Emails = QTableView(self.centralwidget)
+        self.tableView_Emails.setObjectName(u"tableView_Emails")
+
+        self.verticalLayout_2.addWidget(self.tableView_Emails)
+
+        self.label_Zielverzeichnis = QLabel(self.centralwidget)
+        self.label_Zielverzeichnis.setObjectName(u"label_Zielverzeichnis")
+
+        self.verticalLayout_2.addWidget(self.label_Zielverzeichnis)
+
+        self.comboBox_Exportziel = QComboBox(self.centralwidget)
+        self.comboBox_Exportziel.setObjectName(u"comboBox_Exportziel")
+
+        self.verticalLayout_2.addWidget(self.comboBox_Exportziel)
+
+
+        self.gridLayout.addLayout(self.verticalLayout_2, 1, 0, 1, 7)
+
+        self.pushButton_Export_Both = QPushButton(self.centralwidget)
+        self.pushButton_Export_Both.setObjectName(u"pushButton_Export_Both")
+        self.pushButton_Export_Both.setMaximumSize(QSize(120, 23))
+
+        self.gridLayout.addWidget(self.pushButton_Export_Both, 2, 2, 1, 1)
+
+        self.checkBox_Change_Filedate = QCheckBox(self.centralwidget)
+        self.checkBox_Change_Filedate.setObjectName(u"checkBox_Change_Filedate")
+
+        self.gridLayout.addWidget(self.checkBox_Change_Filedate, 2, 4, 1, 1)
+
+        self.verticalLayout = QVBoxLayout()
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setSizeConstraint(QLayout.SizeConstraint.SetDefaultConstraint)
+        self.verticalLayout.setContentsMargins(5, 5, 5, 5)
+        self.label_Postfach = QLabel(self.centralwidget)
+        self.label_Postfach.setObjectName(u"label_Postfach")
+
+        self.verticalLayout.addWidget(self.label_Postfach)
+
+        self.comboBox_Postfach = QComboBox(self.centralwidget)
+        self.comboBox_Postfach.setObjectName(u"comboBox_Postfach")
+        self.comboBox_Postfach.setMinimumSize(QSize(400, 23))
+
+        self.verticalLayout.addWidget(self.comboBox_Postfach)
+
+        self.label_Verzeichnis = QLabel(self.centralwidget)
+        self.label_Verzeichnis.setObjectName(u"label_Verzeichnis")
+
+        self.verticalLayout.addWidget(self.label_Verzeichnis)
+
+        self.comboBox_Verzeichnis = QComboBox(self.centralwidget)
+        self.comboBox_Verzeichnis.setObjectName(u"comboBox_Verzeichnis")
+        self.comboBox_Verzeichnis.setMinimumSize(QSize(100, 23))
+
+        self.verticalLayout.addWidget(self.comboBox_Verzeichnis)
+
+
+        self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 5)
+
+        self.horizontalSpacer = QSpacerItem(20, 20, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout.addItem(self.horizontalSpacer, 2, 3, 1, 1)
+
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout.addItem(self.horizontalSpacer_2, 2, 5, 1, 1)
+
+        MyMainWindow.setCentralWidget(self.centralwidget)
+        self.menubar = QMenuBar(MyMainWindow)
+        self.menubar.setObjectName(u"menubar")
+        self.menubar.setGeometry(QRect(0, 0, 1000, 33))
+        self.menuExit = QMenu(self.menubar)
+        self.menuExit.setObjectName(u"menuExit")
+        MyMainWindow.setMenuBar(self.menubar)
+        self.statusbar = QStatusBar(MyMainWindow)
+        self.statusbar.setObjectName(u"statusbar")
+        MyMainWindow.setStatusBar(self.statusbar)
+
+        self.menubar.addAction(self.menuExit.menuAction())
+        self.menuExit.addAction(self.actionExit)
+
+        self.retranslateUi(MyMainWindow)
+
+        QMetaObject.connectSlotsByName(MyMainWindow)
+    # setupUi
+
+    def retranslateUi(self, MyMainWindow):
+        MyMainWindow.setWindowTitle(QCoreApplication.translate("MyMainWindow", u"MainWindow", None))
+        self.actionExit.setText(QCoreApplication.translate("MyMainWindow", u"Beenden", None))
+        self.pushButton_Export_MSG.setText(QCoreApplication.translate("MyMainWindow", u"Export MSG", None))
+        self.pushButton_Export_PDF.setText(QCoreApplication.translate("MyMainWindow", u"Export PDF", None))
+        self.pushButton_Exit.setText(QCoreApplication.translate("MyMainWindow", u"Beenden", None))
+        self.label_Tabelle.setText(QCoreApplication.translate("MyMainWindow", u"Emails", None))
+        self.label_Zielverzeichnis.setText(QCoreApplication.translate("MyMainWindow", u"Zielverzeichnis", None))
+        self.pushButton_Export_Both.setText(QCoreApplication.translate("MyMainWindow", u"Export MSG && PDF", None))
+        self.checkBox_Change_Filedate.setText(QCoreApplication.translate("MyMainWindow", u"Change Filedate?", None))
+        self.label_Postfach.setText(QCoreApplication.translate("MyMainWindow", u"Postfach", None))
+        self.label_Verzeichnis.setText(QCoreApplication.translate("MyMainWindow", u"Verzeichnis", None))
+        self.menuExit.setTitle(QCoreApplication.translate("MyMainWindow", u"File", None))
+    # retranslateUi
+

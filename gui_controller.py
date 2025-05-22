@@ -15,7 +15,7 @@ der dahinterliegenden Logik und den Outlook-Funktionen. Es kapselt Interaktionsl
 Wird direkt nach GUI-Initialisierung aus `outlook_email_exporter.py` aufgerufen.
 """
 
-from PySide6.QtWidgets import QApplication, QMessageBox, QHeaderView
+from PySide6.QtWidgets import QApplication, QMessageBox, QHeaderView, QAbstractItemView
 from PySide6.QtCore import QTimer, Qt
 from outlook_connector import get_outlook_postfaecher, get_outlook_ordner
 from mail_reader import lade_emails
@@ -23,7 +23,7 @@ from email_table_model import EmailTableModel
 
 def connect_gui_signals(gui):
     """Verbindet GUI-Elemente mit den zugehörigen Funktionen und initialisiert Inhalte."""
-    app_logger.info("🔗 GUI-Events werden verbunden...")
+    app_logger.info("🔗 Verbinde GUI-Signale mit Logikfunktionen...")
 
     # Exit-Button
     if gui.button_exit:
@@ -126,6 +126,10 @@ def on_verzeichnis_changed(gui, index):
         postfach_name = gui.combo_postfach.currentText()
         ordner_pfad = gui.combo_verzeichnis.currentText()
 
+        if not postfach_name or not ordner_pfad:
+            app_logger.warning("⚠️ Kein gültiges Postfach oder Verzeichnis ausgewählt")
+            return
+
         # 🧠 Fehlervermeidung: Postfachname aus Pfad entfernen (falls enthalten)
         if ordner_pfad.startswith(postfach_name + "/"):
             ordner_pfad = ordner_pfad[len(postfach_name) + 1:]
@@ -138,29 +142,32 @@ def on_verzeichnis_changed(gui, index):
         model = EmailTableModel(emails)
         gui.table_view.setModel(model)
 
-        gui.table_view.setSortingEnabled(True)
-        gui.table_view.sortByColumn(1, Qt.DescendingOrder)  # nach Datum sortieren (Spalte 1)
+        # gui.table_view.setSortingEnabled(True)
+        # gui.table_view.sortByColumn(1, Qt.DescendingOrder)  # nach Datum sortieren (Spalte 1)
+        #
+        # # Tabellenkopf vorbereiten
+        # header = gui.table_view.horizontalHeader()
+        # header.setStretchLastSection(False)
+        #
+        # # Resize-Strategie je Spalte
+        # header.setSectionResizeMode(0, QHeaderView.Fixed)  # Checkbox
+        # header.setSectionResizeMode(1, QHeaderView.Interactive)  # Datum
+        # header.setSectionResizeMode(2, QHeaderView.Interactive)  # Name
+        # header.setSectionResizeMode(3, QHeaderView.Interactive)  # E-Mail
+        # header.setSectionResizeMode(4, QHeaderView.Stretch)  # Betreff
+        #
+        # # Mindestbreiten setzen
+        # # Individuelle Mindestbreiten pro Spalte
+        # header.setMinimumSectionSize(10)  # kleiner Basisschutz
+        # gui.table_view.setColumnWidth(0, 26)  # Checkbox wirklich schmal
+        # gui.table_view.setColumnWidth(1, 120)
+        # gui.table_view.setColumnWidth(2, 180)
+        # gui.table_view.setColumnWidth(3, 220)
+        #
+        # gui.table_view.setEnabled(True)
 
-        # Tabellenkopf vorbereiten
-        header = gui.table_view.horizontalHeader()
-        header.setStretchLastSection(False)
-
-        # Resize-Strategie je Spalte
-        header.setSectionResizeMode(0, QHeaderView.Fixed)  # Checkbox
-        header.setSectionResizeMode(1, QHeaderView.Interactive)  # Datum
-        header.setSectionResizeMode(2, QHeaderView.Interactive)  # Name
-        header.setSectionResizeMode(3, QHeaderView.Interactive)  # E-Mail
-        header.setSectionResizeMode(4, QHeaderView.Stretch)  # Betreff
-
-        # Mindestbreiten setzen
-        # Individuelle Mindestbreiten pro Spalte
-        header.setMinimumSectionSize(10)  # kleiner Basisschutz
-        gui.table_view.setColumnWidth(0, 26)  # Checkbox wirklich schmal
-        gui.table_view.setColumnWidth(1, 120)
-        gui.table_view.setColumnWidth(2, 180)
-        gui.table_view.setColumnWidth(3, 220)
-
-        gui.table_view.setEnabled(True)
+        # Aktiviere Checkbox-Klickbarkeit
+        gui.table_view.setEditTriggers(QAbstractItemView.AllEditTriggers)
 
 
 def on_exit_clicked():
