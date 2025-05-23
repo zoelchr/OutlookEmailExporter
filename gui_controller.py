@@ -1,5 +1,3 @@
-import logging
-app_logger = logging.getLogger(__name__)
 """
 gui_controller.py
 
@@ -12,52 +10,100 @@ der dahinterliegenden Logik und den Outlook-Funktionen. Es kapselt Interaktionsl
 - Platzhalter-Handling in den ComboBoxen
 - Benutzerhinweise bei Outlook-Problemen (QMessageBox)
 
-Wird direkt nach GUI-Initialisierung aus `outlook_email_exporter.py` aufgerufen.
+### Zentrale Rolle des Parameters `gui`:
+Der Parameter `gui` spielt eine entscheidende Rolle in allen hier definierten Funktionen. Er stellt die Schnittstelle zu den GUI-Elementen (z. B. Buttons, ComboBoxes, Tabellenansichten) dar und ermöglicht die Verknüpfung dieser Elemente mit der dahinterliegenden Logik. 
+`gui` enthält unter anderem:
+- Referenzen auf GUI-Komponenten wie `button_exit`, `combo_postfach` oder `table_view`.
+- Signal-Slot-Verbindungen, die Benutzeraktionen (z. B. Klicks oder Auswahländerungen) mit den passenden Funktionen verbinden.
+
+### Definition und Instanziierung:
+Die Klasse `gui` wird typischerweise als Teil der GUI-Initialisierung definiert. Der Ursprung dieser Klasse liegt in einer externen Instanz, die aus einer separaten Datei stammt. 
+In diesem Fall:
+- Die `gui`-Instanz wird im übergeordneten Modul `outlook_email_exporter.py` erzeugt und in das `gui_controller.py`-Modul übergeben.
+
+### Aufruf:
+Das Modul `gui_controller.py` wird direkt nach der GUI-Initialisierung aus `outlook_email_exporter.py` aufgerufen.
 """
+import logging
+app_logger = logging.getLogger(__name__)
 
 from PySide6.QtWidgets import QApplication, QMessageBox, QHeaderView, QAbstractItemView
 from PySide6.QtCore import QTimer, Qt
-from outlook_connector import get_outlook_postfaecher, get_outlook_ordner
-from mail_reader import lade_emails
+
+from outlook_connector import get_outlook_postfaecher, get_outlook_ordner, lade_emails
 from email_table_model import EmailTableModel
 
+
 def connect_gui_signals(gui):
-    """Verbindet GUI-Elemente mit den zugehörigen Funktionen und initialisiert Inhalte."""
-    app_logger.info("🔗 Verbinde GUI-Signale mit Logikfunktionen...")
+    """Verbindet GUI-Elemente mit den zugehörigen Funktionen und initialisiert Inhalte.
+
+    Hinweis:
+    Die Aktivierung der combo_postfach erfolgt hier nicht, sondern erst in der Funktion `load_postfaecher_async`.
+    Dies liegt daran, dass die Aktivierung der combo_postfach davon abhängig ist, dass eine erfolgreiche Verbindung
+    zu Outlook hergestellt wurde. Dieses Vorgehen verhindert, dass die GUI-Elemente irrtümlich aktiviert werden,
+    ohne dass entsprechende Daten zur Verfügung stehen.
+    """
+    app_logger.debug("Verbinde GUI-Signale mit Logikfunktionen...")
 
     # Exit-Button
     if gui.button_exit:
         try:
             gui.button_exit.clicked.connect(on_exit_clicked)
-            app_logger.debug("✅ Exit-Button verbunden")
+            app_logger.debug("Exit-Button verbunden.")
         except Exception as e:
-            app_logger.error(f"❌ Fehler beim Verbinden des Exit-Buttons: {e}")
+            app_logger.error(f"Fehler beim Verbinden des Exit-Buttons: {e}")
 
     # Menüeintrag "Exit"
     if gui.action_exit:
         try:
             gui.action_exit.triggered.connect(on_exit_clicked)
-            app_logger.debug("✅ Menü 'Exit' verbunden")
+            app_logger.debug("Exit-Menüeintrag verbunden.")
         except Exception as e:
-            app_logger.error(f"❌ Fehler beim Verbinden des Menü-Exit: {e}")
+            app_logger.error(f"Fehler beim Verbinden des Exit-Menüeintrag: {e}")
 
-    # Verzeichnis-ComboBox deaktivieren, bis ein Postfach ausgewählt wurde
+    # Verzeichnis-ComboBox zunächst deaktivieren, da erst ein Postfach ausgewählt werden muss
     if gui.combo_verzeichnis:
         gui.combo_verzeichnis.setEnabled(False)
 
     # Outlook-Postfächer asynchron laden (verhindert GUI-Blockade)
+    # Hinweis: Die Aktivierung der combo_postfach erfolgt bewusst nicht in connect_gui_signals,
+    # sondern erst in load_postfaecher_async, da sie von einer erfolgreichen Outlook-Verbindung abhängt.
     QTimer.singleShot(200, lambda: load_postfaecher_async(gui))
-    app_logger.debug("🕒 Outlook-Ladevorgang geplant (200ms Verzögerung)")
+    app_logger.debug("Outlook-Ladevorgang geplant (200ms Verzögerung)")
 
 
 def load_postfaecher_async(gui):
-    """Lädt Outlook-Postfächer und initialisiert die ComboBox."""
+    """
+    Lädt die verfügbaren Outlook-Postfächer und initialisiert die zugehörige Auswahl-ComboBox in der GUI.
+
+    Hinweis:
+    Die Aktivierung der combo_postfach erfolgt bewusst nicht in der Funktion `connect_gui_signals`, 
+    sondern erst hier in `load_postfaecher_async`. Hintergrund ist, dass die Aktivierung der combo_postfach 
+    davon abhängt, dass eine Verbindung zu Outlook erfolgreich hergestellt werden kann. 
+    Ohne eine valide Verbindung bleiben die GUI-Interaktionen mit der ComboBox deaktiviert, 
+    um Fehlerszenarien oder ungültige Benutzeraktionen zu vermeiden.
+
+    Parameter:
+    gui : QObject
+        Die GUI-Instanz, welche die ComboBox enthält, die mit den Postfächern gefüllt wird.
+
+    Ablauf:
+    1. Versucht, asynchron die Liste der verfügbaren Outlook-Postfächer zu laden.
+    2. Falls erfolgreich:
+        - Füllt die combo_postfach mit den Postfachnamen.
+        - Aktiviert die combo_postfach.
+        - Verbindet die Auswahländerungen (Signal-Slot-Verknüpfung).
+    3. Bei Fehlermeldungen oder Ausnahmen:
+        - Zeigt eine entsprechende Warnung an und deaktiviert die relevanten GUI-Aktionen.
+    """
     try:
-        app_logger.debug("📥 Beginne asynchronen Outlook-Zugriff")
+        # Starte den Zugriff auf Outlook und lade die Liste der Postfächer.
+        app_logger.debug("Beginne asynchronen Outlook-Zugriff...")
         postfaecher = get_outlook_postfaecher()
 
+        # Falls keine Postfächer geladen werden konnten, zeige eine Warnung und verhindere weitere Aktionen.
         if not postfaecher:
-            app_logger.warning("⚠️ Keine Postfächer geladen – Outlook möglicherweise nicht erreichbar")
+            app_logger.warning("Keine Postfächer geladen – Outlook möglicherweise nicht erreichbar.")
             QMessageBox.warning(
                 gui,
                 "Outlook-Verbindung fehlgeschlagen",
@@ -66,78 +112,138 @@ def load_postfaecher_async(gui):
                 "• Ist Outlook installiert?\n"
                 "• Wurde Outlook korrekt beendet?\n"
                 "• Läuft der Prozess 'OUTLOOK.EXE'?\n\n"
-                "Versuchen Sie ggf. Outlook manuell zu starten.",
+                "Versuchen Sie ggf. Outlook manuell (neu) zu starten.",
             )
             return
 
+        # Aktualisiere die ComboBox für die Postfächer, falls verfügbar.
         if gui.combo_postfach:
+            # Entfernt alle vorhandenen Einträge in der ComboBox, um sicherzustellen,
+            # dass sie vor dem Hinzufügen neuer Elemente vollständig geleert ist.
+
+            # ComboBox leeren...
             gui.combo_postfach.clear()
+
+            # Füge einen allgemeinen Auswahlhinweis und die geladenen Postfächer hinzu.
             gui.combo_postfach.addItem("Bitte Postfach auswählen...")
             gui.combo_postfach.addItems(postfaecher)
+
+            # Wähle standardmäßig den Hinweis-Eintrag "Bitte Postfach auswählen …" aus.
             gui.combo_postfach.setCurrentIndex(0)
 
+            # Verbinde die Auswahländerung der ComboBox mit der entsprechenden Logik.
+            # Mithilfe von `lambda index` wird die Funktion `on_postfach_changed` aufgerufen und gleichzeitig das benötigte
+            # Argument `gui` übergeben. Ohne `lambda` könnte nur der Index verwendet werden, da das Signal `currentIndexChanged`
+            # standardmäßig nur diesen bereitstellt.
             gui.combo_postfach.currentIndexChanged.connect(
                 lambda index: on_postfach_changed(gui, index)
             )
 
-            app_logger.info("📋 Postfächer erfolgreich geladen und verbunden")
+            # Erfolgreiche Initialisierung wird im Log dokumentiert.
+            app_logger.debug("Postfächer erfolgreich geladen und verbunden.")
 
     except Exception as e:
-        app_logger.error(f"❌ Fehler beim Laden der Outlook-Postfächer: {e}")
+        # Fehlerbehandlung: Dokumentiere unerwartete Probleme im Log und verhindere Abstürze.
+        app_logger.error(f"Fehler beim Laden der Outlook-Postfächer: {e}")
 
 
 def on_postfach_changed(gui, index):
-    """Wird aufgerufen, wenn ein Postfach ausgewählt wurde."""
+    """Wird aufgerufen, wenn ein Postfach ausgewählt wurde, d.h. index > 0."""
     if index > 0:
+        # Platzhalter "Bitte Postfach auswählen..." entfernen, falls vorhanden
+        # (wird nur beim ersten Aufruf benötigt)
         placeholder_text = "Bitte Postfach auswählen..."
         placeholder_index = gui.combo_postfach.findText(placeholder_text)
         if placeholder_index != -1:
             gui.combo_postfach.removeItem(placeholder_index)
-            app_logger.debug("ℹ️ Platzhalter 'Bitte Postfach auswählen...' entfernt")
+            app_logger.debug("Platzhalter 'Bitte Postfach auswählen...' entfernt")
 
-        # Ordnerstruktur abrufen
+        # Die Ordner zum gewählten Postfach werden geladen.
         postfach_name = gui.combo_postfach.currentText()
         verzeichnisse = get_outlook_ordner(postfach_name)
 
+        
         if gui.combo_verzeichnis:
+            # Löscht alle bestehenden Einträge in der ComboBox für Verzeichnisse,
+            # um sicherzustellen, dass sie vorhinige Inhalte nicht erneut anzeigt.
             gui.combo_verzeichnis.clear()
+
+            # Fügt einen Platzhalter-Hinweis "Bitte Verzeichnis auswählen..." zu ComboBox hinzu.
+            # Dies hilft dem Benutzer, zu erkennen, dass ein Verzeichnis auszuwählen ist.
             gui.combo_verzeichnis.addItem("Bitte Verzeichnis auswählen...")
+
+            # Füllt die ComboBox mit den verfügbaren Verzeichnissen (Ordnern),
+            # die zuvor aus Outlook geladen wurden.
             gui.combo_verzeichnis.addItems(verzeichnisse)
+
+            # Aktiviert die ComboBox, sodass der Benutzer mit ihr interagieren kann, nachdem sie gefüllt wurde.
             gui.combo_verzeichnis.setEnabled(True)
+
+            # Setzt den Standardauswahlindex auf den ersten Eintrag "Bitte Verzeichnis auswählen...".
             gui.combo_verzeichnis.setCurrentIndex(0)
 
+            # Verknüpft die GUI-Verzeichnis-ComboBox mit der Methode on_verzeichnis_changed.
+            # Jedes Mal, wenn der Benutzer die Auswahl in der ComboBox ändert, wird die Funktion `on_verzeichnis_changed` aufgerufen.
             gui.combo_verzeichnis.currentIndexChanged.connect(
                 lambda index: on_verzeichnis_changed(gui, index)
             )
-            app_logger.info(f"📂 {len(verzeichnisse)} Verzeichnisse für '{postfach_name}' geladen")
 
+            # Protokolliert die Anzahl der geladenen Verzeichnisse in die Logging-Daten.
+            app_logger.info(f"📂 {len(verzeichnisse)} Verzeichnisse für '{postfach_name}' geladen")
+        else:
+            # Wenn die ComboBox nicht zugreifbar war (z. B. GUI-Problem):
+            # Logge eine Warnung für den Benutzer und erläutere das Problem.
+            app_logger.warning(f"Kann Ordner für das Postfach {postfach_name} nicht laden – Outlook möglicherweise nicht erreichbar.")
+
+            # Zeigt eine Warnmeldung in der GUI an, wenn Outlook-Probleme auftreten.
+            # Gibt dem Benutzer auch Hinweise, um typische Probleme zu lösen (z. B. Outlook neu starten).
+            QMessageBox.warning(
+                gui,
+                "Outlook-Verbindung fehlgeschlagen",
+                "Outlook konnte nicht gestartet oder verbunden werden.\n\n"
+                "Bitte prüfen Sie:\n"
+                "• Ist Outlook installiert?\n"
+                "• Wurde Outlook korrekt beendet?\n"
+                "• Läuft der Prozess 'OUTLOOK.EXE'?\n\n"
+                "Versuchen Sie ggf. Outlook manuell (neu) zu starten.",
+            )
+
+            # Beendet die weitere Ausführung der Methode, da keine Verzeichnisse verarbeitet werden können.
+            return
+        
 
 def on_verzeichnis_changed(gui, index):
     """Reaktion auf Verzeichniswahl: Checkbox-Platzhalter entfernen + Tabelle befüllen."""
     if index > 0:
-        # Platzhalter entfernen
+        # Platzhalter "Bitte Verzeichnis auswählen …" entfernen, falls vorhanden
+        # (wird nur beim ersten Aufruf benötigt)
         placeholder_text = "Bitte Verzeichnis auswählen..."
         placeholder_index = gui.combo_verzeichnis.findText(placeholder_text)
         if placeholder_index != -1:
             gui.combo_verzeichnis.removeItem(placeholder_index)
             app_logger.debug("ℹ️ Platzhalter 'Bitte Verzeichnis auswählen...' entfernt")
 
-        # E-Mail-Tabelle vorbereiten
+        # Holt den aktuell im Postfach-ComboBox ausgewählten Text.
         postfach_name = gui.combo_postfach.currentText()
+        # Holt den aktuell im Verzeichnis-ComboBox ausgewählten Text.
         ordner_pfad = gui.combo_verzeichnis.currentText()
 
+        # Sollte die Auswahl leer sein, wird eine Log-Warnung ausgegeben und die Methode beendet.
         if not postfach_name or not ordner_pfad:
-            app_logger.warning("⚠️ Kein gültiges Postfach oder Verzeichnis ausgewählt")
+            app_logger.warning("Kein gültiges Postfach oder Verzeichnis ausgewählt.")
             return
 
-        # 🧠 Fehlervermeidung: Postfachname aus Pfad entfernen (falls enthalten)
+        # Fehlervermeidung: Postfachname aus Pfad entfernen (falls enthalten)
         if ordner_pfad.startswith(postfach_name + "/"):
             ordner_pfad = ordner_pfad[len(postfach_name) + 1:]
 
-        app_logger.debug(f"📨 Starte Mail-Import für Postfach='{postfach_name}', Ordner='{ordner_pfad}'")
-
+        # Startet den Prozess des Mail-Imports für das angegebene Postfach und den Ordner.
+        # Die Funktion `lade_emails` ruft alle E-Mails aus dem Outlook-Ordner ab,
+        # der durch das Postfach (`postfach_name`) und den Pfad (`ordner_pfad`) spezifiziert ist.
+        # Nach Abschluss des Imports wird die Anzahl der geladenen E-Mails protokolliert.
+        app_logger.debug(f"Starte Mail-Import für Postfach='{postfach_name}', Ordner='{ordner_pfad}'")
         emails = lade_emails(postfach_name, ordner_pfad)
-        app_logger.info(f"📊 Tabelle wird mit {len(emails)} E-Mails befüllt")
+        app_logger.info(f"Tabelle wird mit {len(emails)} E-Mails befüllt")
 
         model = EmailTableModel(emails)
         gui.table_view.setModel(model)

@@ -1,5 +1,3 @@
-import logging
-app_logger = logging.getLogger(__name__)
 """
 outlook_connector.py
 
@@ -10,9 +8,15 @@ einer Ausschlussliste aus der Konfiguration (`IGNORE_POSTFAECHER`).
 Fehler wie z. B. ein blockierter Outlook-Prozess oder ein fehlendes Profil werden robust behandelt
 und im Log dokumentiert.
 """
+import logging
+app_logger = logging.getLogger(__name__)
+
 import win32com.client
+
 from config import IGNORE_POSTFAECHER
 from config import EXCLUDE_FOLDERNAMES
+from email_model import Email
+
 
 def get_outlook_postfaecher():
     try:
@@ -71,7 +75,7 @@ def get_outlook_ordner(postfach_name):
 
             # Ausschluss durch Namensfilter
             if any(blocked in folder_name_lower for blocked in EXCLUDE_FOLDERNAMES):
-                app_logger.debug(f"⛔️ Ordner ausgeschlossen (Name gefiltert): {full_path}")
+                app_logger.debug(f"Ordner ausgeschlossen (Name gefiltert): {full_path}")
                 return
 
             # Nur Ordner mit Inhalt (E-Mails oder Elemente)
@@ -82,9 +86,9 @@ def get_outlook_ordner(postfach_name):
 
             if item_count > 0:
                 ordnerliste.append(full_path)
-                app_logger.debug(f"✅ Ordner akzeptiert: {full_path} ({item_count} Elemente)")
+                app_logger.debug(f"Ordner akzeptiert: {full_path} ({item_count} Elemente)")
             else:
-                app_logger.debug(f"🚫 Ordner ohne Inhalt übersprungen: {full_path}")
+                app_logger.debug(f"Ordner ohne Inhalt übersprungen: {full_path}")
 
             # Rekursiv prüfen
             for subfolder in folder.Folders:
@@ -92,9 +96,60 @@ def get_outlook_ordner(postfach_name):
 
         collect_folder_names(root_folder)
 
-        app_logger.info(f"📂 {len(ordnerliste)} relevante Ordner für '{postfach_name}' gefunden")
+        app_logger.info(f"{len(ordnerliste)} relevante Ordner für '{postfach_name}' gefunden")
         return ordnerliste
 
     except Exception as e:
-        app_logger.error(f"❌ Fehler beim Laden der Ordner für '{postfach_name}': {e}")
+        app_logger.error(f"Fehler beim Laden der Ordner für '{postfach_name}': {e}")
         return []
+
+def lade_emails(postfach_name: str, ordner_pfad: str) -> list[Email]:
+    """
+    Lädt E-Mails aus einem angegebenen Outlook-Postfach und Ordner mithilfe des COM-Interfaces.
+
+    Args:
+        postfach_name (str): Der Anzeigename des Postfachs, das ausgewählt wurde (wie in der GUI-ComboBox dargestellt).
+        ordner_pfad (str): Pfad zum Zielordner innerhalb des Postfachs, z. B. "Posteingang/Projekte/2025".
+
+    Returns:
+        list[Email]: Eine Liste von `Email`-Objekten, die die wichtigsten E-Mail-Daten enthalten (z. B. Betreff, Absender, Empfangszeit).
+                     Gibt eine leere Liste zurück, falls keine E-Mails gefunden werden oder ein Fehler auftritt.
+    """
+    emails = []  # Liste zum Speichern der extrahierten E-Mails
+
+    try:
+        # Logs einen Hinweis, dass der Ladevorgang für ein spezifisches Postfach und einen Ordner beginnt.
+        app_logger.info(f"Lese Mails aus: Postfach='{postfach_name}' | Ordner='{ordner_pfad}'")
+
+        # Verbindung zu Outlook herstellen und auf den angegebenen Postfach-Namespace zugreifen
+        outlook = win32com.client.Dispatch("Outlook.Application")
+        namespace = outlook.GetNamespace("MAPI")
+        root_folder = namespace.Folders[postfach_name]
+
+        # Navigiere durch die Ordnerstruktur, beginnend beim root_folder,
+        # und aktualisiere das aktuelle Zielverzeichnis anhand der Segmente des Ordnerpfades.
+        # Dabei wird nur der gewählte Ordner verarbeitet, Unterordner werden nicht berücksichtigt.
+        current_folder = root_folder
+        for part in ordner_pfad.split("/"):
+            current_folder = current_folder.Folders[part]
+
+        # Iteriere über die Objekte im Ordner und extrahiere nur E-Mail-Objekte (Class = 43)
+        for item in current_folder.Items:
+            if item.Class == 43:  # 43 steht für E-Mail-Objekt (olMail)
+                email = Email(
+                    received=str(item.ReceivedTime.strftime("%d.%m.%Y %H:%M")),     # Empfangszeit als formatierter String
+                    sender_name=item.SenderName,                                    # Name des Absenders
+                    sender_email=item.SenderEmailAddress,                           # E-Mail-Adresse des Absenders
+                    subject=item.Subject or "",                                     # Betreff (oder leer, falls nicht vorhanden)
+                    outlook_item=item                                               # Das Original-Outlook-Objekt
+                )
+                emails.append(email)  # Füge das generierte `Email`-Objekt der Liste hinzu
+
+        # Logs die Anzahl der erfolgreich geladenen E-Mails
+        app_logger.info(f"{len(emails)} Mails geladen.")
+        return emails  # Gibt die gefüllte Liste zurück, falls erfolgreich
+
+    except Exception as e:
+        # Logs den Fehler, falls während des Ladevorgangs ein Problem auftritt
+        app_logger.error(f"Fehler beim Lesen von Mails: {e}")
+        return []  # Gibt eine leere Liste zurück, falls ein Fehler auftritt

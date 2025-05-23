@@ -12,9 +12,10 @@ Dieses Modul dient als zentraler Einstiegspunkt für das gesamte Outlook-Export-
 from PySide6.QtWidgets import QApplication      # Importiert die QApplication-Klasse, die erforderlich ist, um eine Qt-Anwendung zu erstellen
 import sys                                      # Importiert das sys-Modul, um Zugriff auf Argumente und Systemfunktionen zu erhalten
 
-from ui_loader import MyMainWindow              # Importiert das MyMainWindow-Hauptfenster aus dem Modul ui_loader
-from minigui import Ui_MainWindow  # Importieren des generierten Codes
 from config import EXPORT_PATH                  # Importiert den Exportpfad aus den Konfigurationsdateien
+
+from ui_main_window import Ui_MainWindow      # Importieren das Ui_MainWindow-Hauptfenster aus dem Modul des generierten Codes
+from my_main_window import MyMainWindow         # Importiert das MyMainWindow-Hauptfenster aus dem Modul ui_loader
 from gui_controller import connect_gui_signals
 
 # Protokollierung des Programmstarts für Debugging und Nachvollziehbarkeit
@@ -35,9 +36,12 @@ if __name__ == "__main__":
     # - Es wird eine Instanz von MyMainWindow erzeugt. Dies ist das Hauptfenster der Anwendung.
     # - MyMainWindow basiert auf der Qt-Klasse und enthält alle wichtigen Elemente der Benutzeroberfläche (z. B. Menüs, Widgets etc.).
     window = MyMainWindow()
-    app_logger.info(f"MyMainWindow wurde instanziiert.")
+    app_logger.debug(f"MyMainWindow wurde instanziiert.")
 
-    #connect_gui_signals(window)
+    # Verknüpfung der GUI-Komponenten mit Logik
+    # - Die Funktion durchläuft alle relevanten Widgets der Klasse MyMainWindow (repräsentiert durch `window`).
+    # - Für jedes relevante Signal der GUI-Komponenten verbindet sie ein Signal (`.clicked`, etc.) mit einer passenden Funktion (Slot).
+    connect_gui_signals(window)
 
     # - Mit show() wird das Hauptfenster sichtbar gemacht und auf dem Bildschirm angezeigt.
     # - Es handelt sich um die Aufforderung an Qt, das Hauptfenster in das GUI-Ereignissystem zu integrieren und es anzuzeigen.

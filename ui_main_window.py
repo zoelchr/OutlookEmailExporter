@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'outlook_email_exporter.ui'
+## Form generated from reading UI file 'ui_main_window.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.0
 ##
@@ -22,15 +22,15 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
     QSpacerItem, QStatusBar, QTableView, QVBoxLayout,
     QWidget)
 
-class Ui_MyMainWindow(object):
-    def setupUi(self, MyMainWindow):
-        if not MyMainWindow.objectName():
-            MyMainWindow.setObjectName(u"MyMainWindow")
-        MyMainWindow.resize(1000, 603)
-        MyMainWindow.setMinimumSize(QSize(1000, 600))
-        self.actionExit = QAction(MyMainWindow)
+class Ui_MainWindow(object):
+    def setupUi(self, MainWindow):
+        if not MainWindow.objectName():
+            MainWindow.setObjectName(u"MainWindow")
+        MainWindow.resize(1000, 603)
+        MainWindow.setMinimumSize(QSize(1000, 600))
+        self.actionExit = QAction(MainWindow)
         self.actionExit.setObjectName(u"actionExit")
-        self.centralwidget = QWidget(MyMainWindow)
+        self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout = QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName(u"gridLayout")
@@ -129,37 +129,37 @@ class Ui_MyMainWindow(object):
 
         self.gridLayout.addItem(self.horizontalSpacer_2, 2, 5, 1, 1)
 
-        MyMainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QMenuBar(MyMainWindow)
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
         self.menubar.setGeometry(QRect(0, 0, 1000, 33))
         self.menuExit = QMenu(self.menubar)
         self.menuExit.setObjectName(u"menuExit")
-        MyMainWindow.setMenuBar(self.menubar)
-        self.statusbar = QStatusBar(MyMainWindow)
+        MainWindow.setMenuBar(self.menubar)
+        self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
-        MyMainWindow.setStatusBar(self.statusbar)
+        MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menuExit.menuAction())
         self.menuExit.addAction(self.actionExit)
 
-        self.retranslateUi(MyMainWindow)
+        self.retranslateUi(MainWindow)
 
-        QMetaObject.connectSlotsByName(MyMainWindow)
+        QMetaObject.connectSlotsByName(MainWindow)
     # setupUi
 
-    def retranslateUi(self, MyMainWindow):
-        MyMainWindow.setWindowTitle(QCoreApplication.translate("MyMainWindow", u"MainWindow", None))
-        self.actionExit.setText(QCoreApplication.translate("MyMainWindow", u"Beenden", None))
-        self.pushButton_Export_MSG.setText(QCoreApplication.translate("MyMainWindow", u"Export MSG", None))
-        self.pushButton_Export_PDF.setText(QCoreApplication.translate("MyMainWindow", u"Export PDF", None))
-        self.pushButton_Exit.setText(QCoreApplication.translate("MyMainWindow", u"Beenden", None))
-        self.label_Tabelle.setText(QCoreApplication.translate("MyMainWindow", u"Emails", None))
-        self.label_Zielverzeichnis.setText(QCoreApplication.translate("MyMainWindow", u"Zielverzeichnis", None))
-        self.pushButton_Export_Both.setText(QCoreApplication.translate("MyMainWindow", u"Export MSG && PDF", None))
-        self.checkBox_Change_Filedate.setText(QCoreApplication.translate("MyMainWindow", u"Change Filedate?", None))
-        self.label_Postfach.setText(QCoreApplication.translate("MyMainWindow", u"Postfach", None))
-        self.label_Verzeichnis.setText(QCoreApplication.translate("MyMainWindow", u"Verzeichnis", None))
-        self.menuExit.setTitle(QCoreApplication.translate("MyMainWindow", u"File", None))
+    def retranslateUi(self, MainWindow):
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        self.actionExit.setText(QCoreApplication.translate("MainWindow", u"Beenden", None))
+        self.pushButton_Export_MSG.setText(QCoreApplication.translate("MainWindow", u"Export MSG", None))
+        self.pushButton_Export_PDF.setText(QCoreApplication.translate("MainWindow", u"Export PDF", None))
+        self.pushButton_Exit.setText(QCoreApplication.translate("MainWindow", u"Beenden", None))
+        self.label_Tabelle.setText(QCoreApplication.translate("MainWindow", u"Emails", None))
+        self.label_Zielverzeichnis.setText(QCoreApplication.translate("MainWindow", u"Zielverzeichnis", None))
+        self.pushButton_Export_Both.setText(QCoreApplication.translate("MainWindow", u"Export MSG && PDF", None))
+        self.checkBox_Change_Filedate.setText(QCoreApplication.translate("MainWindow", u"Change Filedate?", None))
+        self.label_Postfach.setText(QCoreApplication.translate("MainWindow", u"Postfach", None))
+        self.label_Verzeichnis.setText(QCoreApplication.translate("MainWindow", u"Verzeichnis", None))
+        self.menuExit.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
     # retranslateUi
 

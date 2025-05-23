@@ -12,13 +12,13 @@ for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
 # 🔢 Mappe benutzerdefinierten DEBUG_LEVEL auf echtes logging-Level
-LEVEL_MAP = {
+LEVEL_NAME_MAP = {
     0: logging.ERROR,
     1: logging.WARNING,
     2: logging.INFO,
     3: logging.DEBUG,
 }
-log_level = LEVEL_MAP.get(DEBUG_LEVEL, logging.INFO)
+log_level = LEVEL_NAME_MAP.get(DEBUG_LEVEL, logging.INFO)
 
 # 🗑 Alte Log-Datei löschen (bei jedem Start)
 try:
