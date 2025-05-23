@@ -1,107 +1,254 @@
 """
 outlook_connector.py
 
-Dieses Modul stellt Funktionen zum Zugriff auf Outlook bereit (via COM-Interface `win32com`).
-Aktuell wird eine Liste aller verfügbaren Postfächer im Profil zurückgegeben – unter Berücksichtigung
-einer Ausschlussliste aus der Konfiguration (`IGNORE_POSTFAECHER`).
+Das Modul `outlook_connector.py` bietet eine zentrale Schnittstelle zur Interaktion mit Microsoft Outlook,
+indem es das COM-Interface `win32com.client` verwendet. Es enthält grundlegende Funktionen für die Automatisierung
+von Aufgaben bezogen auf Outlook, wie das Abrufen von Postfächern, das Durchsuchen von Ordnerstrukturen
+und das Verwalten von E-Mail-Daten.
 
-Fehler wie z. B. ein blockierter Outlook-Prozess oder ein fehlendes Profil werden robust behandelt
-und im Log dokumentiert.
+### Übersicht der Hauptfunktionen:
+1. **Postfachverwaltung:**
+   - Ermittelt alle verfügbaren Postfächer im aktuellen Outlook-Profil unter Berücksichtigung der Konfigurationsparameter,
+     wie beispielsweise der Ausschlussliste (`IGNORE_POSTFAECHER`).
+   - Sorgt für eine effiziente und gezielte Handhabung der Postfächer durch Filterung irrelevanter Elemente.
+
+2. **Verzeichnis- und Ordnersuche:**
+   - Ermöglicht die Rekursive Suche und Verarbeitung von Ordnerstrukturen in einem Postfach.
+   - Respektiert dabei die maximale Suchtiefe (`MAX_FOLDER_DEPTH`) und eine Ausschlussliste (`EXCLUDE_FOLDERNAMES`) für Ordner, 
+     um die Leistung zu optimieren und irrelevante Inhalte auszublenden.
+
+3. **E-Mail-Verarbeitung:**
+   - Bietet grundlegende Unterstützung für die Extraktion und strukturelle Handhabung von E-Mails in ausgewählten Ordnerstrukturen.
+
+### Besondere Merkmale:
+- **Robuste Fehlerbehandlung:** 
+  - Tritt ein Problem mit der Outlook-Installation, einem blockierten Prozess oder einer fehlenden Konfiguration auf,
+    werden diese Fehler detailliert protokolliert und gegebenenfalls an den Benutzer weitergeleitet, um eine stabile Ausführung
+    sicherzustellen.
+  
+- **Flexibilität durch Konfiguration:**
+  - Einstellungen wie ignorierte Postfächer (z. B. Archiv oder Testkonten), ausgenommene Ordnernamen oder die maximale Suchtiefe
+    können zentral in der `.env`-Datei angegeben werden.
+
+- **Integration in GUI-Systeme:**
+  - Das Modul ist darauf ausgelegt, andere Systeme wie grafische Benutzeroberflächen zu unterstützen, wobei durch Log-Nachrichten und
+    klare Schnittstellen eine einfache Integration möglich ist.
 """
 import logging
-app_logger = logging.getLogger(__name__)
+app_logger = logging.getLogger(__name__)  
+# Erstellt einen Logger für die aktuelle Datei. 
+# Der Logger wird verwendet, um Debug- und Fehlerinformationen während der Ausführung zu protokollieren.
 
-import win32com.client
+import win32com.client  
+# Importiert die win32com.client-Bibliothek, die eine Schnittstelle für die Automatisierung von 
+# Windows-Komponenten wie Outlook bereitstellt. Sie wird verwendet, um auf COM-Objekte zuzugreifen.
 
-from config import IGNORE_POSTFAECHER
-from config import EXCLUDE_FOLDERNAMES
-from email_model import Email
+from config import IGNORE_POSTFAECHER, MAX_FOLDER_DEPTH, EXCLUDE_FOLDERNAMES  
+# Importiert Konfigurationsparameter aus der `config.py`-Datei:
+# - `IGNORE_POSTFAECHER`: Eine Liste von Postfächern, die nicht in der GUI angezeigt werden sollen.
+# - `MAX_FOLDER_DEPTH`: Die maximale Tiefe, bis zu der in der Ordnerstruktur eines Postfachs gesucht wird.
+# - `EXCLUDE_FOLDERNAMES`: Eine Liste von Ordnernamen, die aus der Suche ausgeschlossen werden.
+
+from email_model import Email  
+# Importiert die `Email`-Klasse aus dem Modul `email_model`, 
 
 
 def get_outlook_postfaecher():
+    """
+    Ruft eine Liste der Postfächer ab, die im aktuellen Outlook-Profil verfügbar sind, 
+    und filtert diese basierend auf einer Ignorierliste.
+
+    Die Funktion verwendet die Microsoft Outlook COM-Schnittstelle, um auf Postfächer und gespeicherte Daten 
+    zuzugreifen. Dabei werden alle Postfächer, die in der globalen Variable `IGNORE_POSTFAECHER` definiert sind, 
+    aus der Rückgabe ausgeschlossen.
+
+    Returns:
+        list: Eine Liste der Namen von Postfächern, die für das aktuelle Profil zugänglich sind und 
+              nicht in der Ignorierliste `IGNORE_POSTFAECHER` enthalten sind.
+
+    Ablauf:
+    1. Die Funktion stellt eine Verbindung zu den Outlook-Datenquellen her und ruft die verfügbaren 
+       Speicherorte (sog. "Stores") ab.
+    2. Für jeden Speicherort wird überprüft, ob der Name in der Ignorierliste `IGNORE_POSTFAECHER` enthalten ist.
+       - Falls nicht, wird der Name des Speicherortes zu einer Liste hinzugefügt.
+    3. Die gefilterte Liste der Postfächer wird zurückgegeben.
+
+    Wichtige Hinweise:
+    - Die Funktion ist von der Outlook COM-Schnittstelle abhängig und erfordert ein korrekt konfiguriertes 
+      Outlook-Profil auf dem System, von dem der Zugriff erfolgt.
+    """
     try:
-        app_logger.info("📥 Starte Zugriff auf Outlook")
+        app_logger.debug("Starte Zugriff auf Outlook.")
 
         try:
+            # Versuch, eine Instanz der Outlook-Anwendung mit der COM-Schnittstelle zu instanziieren.
             outlook = win32com.client.Dispatch("Outlook.Application")
         except Exception as dispatch_error:
-            app_logger.error(f"❌ Outlook konnte nicht gestartet oder verbunden werden: {dispatch_error}")
-            return []
+            # Fehlerprotokollierung, falls Outlook nicht gestartet oder verbunden werden kann.
+            app_logger.error(f"Outlook konnte nicht gestartet oder verbunden werden: {dispatch_error}")
+            return []  # Rückgabe einer leeren Liste, da keine Aktion möglich ist.
 
-        app_logger.info("🔌 Outlook.Application instanziiert")
+        # Protokollierung, dass die Instanz der Outlook-Anwendung erfolgreich erstellt wurde.
+        app_logger.debug("Outlook.Application instanziiert.")
 
         try:
+            # Zugriff auf das MAPI-Namespace-Objekt von Outlook, das die Schnittstelle für Postfächer, Ordner
+            # und Elemente innerhalb des aktuellen Benutzerprofils bereitstellt.
             namespace = outlook.GetNamespace("MAPI")
+            
+            # Abrufen der Sammlungen aller verfügbaren "Stores" (Postfächer und Speicherorte), die mit dem aktuellen
+            # Outlook-Profil verknüpft sind (z. B. Exchange-Postfächer, IMAP-Ordner, Archivdateien).
             stores = namespace.Stores
-            app_logger.info(f"📂 Anzahl Stores: {stores.Count}")
-        except Exception as ns_error:
-            app_logger.error(f"❌ Fehler beim Zugriff auf Outlook-Namespace: {ns_error}")
-            return []
 
+            # Protokollierung der Anzahl der gefundenen Postfächer/Speicherorte.
+            app_logger.debug(f"Anzahl gefundener Outlook-Stores: {stores.Count}")
+
+            # Protokollierung der Namen der gefundenen Stores zur Nachverfolgbarkeit, um sicherzustellen,
+            # dass die Verbindung korrekt arbeitet und alle relevanten Stores erkannt wurden.
+            app_logger.debug(f"Gefundene Outlook-Stores: {[store.DisplayName for store in stores]}")
+
+        except Exception as ns_error:
+            # Fehlerprotokollierung, falls beim Zugriff auf das MAPI-Namespaces-Objekt ein Problem auftritt.
+            app_logger.error(f"Fehler beim Zugriff auf Outlook-Namespace: {ns_error}")
+            return []  # Rückgabe einer leeren Liste, da keine Aktion möglich ist.
+
+        # Initialisiere eine leere Liste zur Speicherung der gefundenen Postfächer
         postfaecher = []
 
+        # Durchlaufe die Sammlung aller Stores (Postfächer/Speicher), die aus Outlook geladen wurden
         for i in range(stores.Count):
+            # Greift auf das aktuelle Store-Element zu (1-basiert, daher `i + 1`)
             store = stores.Item(i + 1)
-            app_logger.debug(f"🔍 Prüfe Store: {store.DisplayName}")
+            # Protokolliere den Namen des aktuellen Stores, der geprüft wird
+            app_logger.debug(f"Prüfe Store: {store.DisplayName}")
+            
+            # Überprüfe, ob der Name des Stores nicht in der Liste der zu ignorierenden Postfächer (IGNORE_POSTFAECHER) enthalten ist
             if store.DisplayName not in IGNORE_POSTFAECHER:
+                # Wenn der Store nicht in der Ignorier-Liste ist, füge ihn der Postfachliste hinzu
                 postfaecher.append(store.DisplayName)
 
-        app_logger.info(f"📬 {len(postfaecher)} Postfächer gefunden")
+        # Protokolliere die Anzahl der gefundenen Postfächer, die nicht ignoriert wurden
+        app_logger.debug(f"{len(postfaecher)} Postfächer gefunden")
+
+        # Gib die gefilterte Liste der Postfächer zurück
         return postfaecher
 
     except Exception as e:
-        app_logger.error(f"❌ Allgemeiner Fehler beim Outlook-Zugriff: {e}")
+        app_logger.error(f"Allgemeiner Fehler beim Outlook-Zugriff: {e}")
         return []
 
 
 def get_outlook_ordner(postfach_name):
     """
-    Ruft alle Outlook-Ordner eines Postfachs ab, die
-    - mindestens eine E-Mail enthalten (Items.Count > 0),
-    - keine ausgeschlossenen Namen enthalten (EXCLUDE_FOLDERNAMES).
+    Ruft eine Liste aller relevanten Ordner eines angegebenen Outlook-Postfachs ab.
+
+    Ablauf:
+    1. Initialisiert den Zugriff auf die Outlook-Anwendung und das angegebene Postfach.
+    2. Prüft die Ordner des Postfachs:
+        - Es werden nur Ordner berücksichtigt, die mindestens eine E-Mail enthalten (`Items.Count > 0`).
+        - Ordner, deren Namen in `EXCLUDE_FOLDERNAMES` definiert sind, werden ausgeschlossen.
+    3. Ruft alle gültigen Ordnernamen rekursiv bis zu einer maximalen Tiefe (`MAX_FOLDER_DEPTH`) ab.
+    4. Gibt die Liste der relevanten Ordner zurück.
+
+    Parameter:
+        postfach_name (str): Der Name des Outlook-Postfachs, dessen Ordner analysiert werden sollen.
+
+    Returns:
+        list: Eine Liste von Ordnernamen, die den angegebenen Kriterien entsprechen. 
+              Gibt eine leere Liste zurück, falls ein Fehler auftritt.
+
+    Fehlerbehandlung:
+    - Fängt alle Ausnahmen während des Zugriffs auf die Outlook-APIs ab.
+    - Gibt bei Fehlern eine leere Liste zurück und loggt eine entsprechende Fehlermeldung.
     """
     try:
-        app_logger.info(f"📥 Beginne Ordnerabfrage für Postfach: {postfach_name}")
+        # Protokolliert den Start der Ordnerabfrage
+        app_logger.debug(f"Beginne Ordnerabfrage für Postfach: {postfach_name}")
 
+        # Erstellt eine Verbindung zur Outlook-Anwendung
         outlook = win32com.client.Dispatch("Outlook.Application")
         namespace = outlook.GetNamespace("MAPI")
+
+        # Ruft den Wurzelordner des angegebenen Postfachs ab
         root_folder = namespace.Folders[postfach_name]
 
+        # Initialisiert eine leere Liste für die relevanten Ordner
         ordnerliste = []
 
-        def collect_folder_names(folder, path=""):
-            full_path = f"{path}/{folder.Name}" if path else folder.Name
-            folder_name_lower = folder.Name.lower()
+        # Sammelt rekursiv alle relevanten Ordnernamen (Filter- und Tiefenkontrolle inkludiert)
+        ordnerliste = collect_folder_names(
+            root_folder, 
+            exclude=EXCLUDE_FOLDERNAMES, 
+            max_depth=MAX_FOLDER_DEPTH
+        )
 
-            # Ausschluss durch Namensfilter
-            if any(blocked in folder_name_lower for blocked in EXCLUDE_FOLDERNAMES):
-                app_logger.debug(f"Ordner ausgeschlossen (Name gefiltert): {full_path}")
-                return
-
-            # Nur Ordner mit Inhalt (E-Mails oder Elemente)
-            try:
-                item_count = folder.Items.Count
-            except Exception:
-                item_count = 0  # Bei Zugriffsfehlern ignorieren
-
-            if item_count > 0:
-                ordnerliste.append(full_path)
-                app_logger.debug(f"Ordner akzeptiert: {full_path} ({item_count} Elemente)")
-            else:
-                app_logger.debug(f"Ordner ohne Inhalt übersprungen: {full_path}")
-
-            # Rekursiv prüfen
-            for subfolder in folder.Folders:
-                collect_folder_names(subfolder, full_path)
-
-        collect_folder_names(root_folder)
-
+        # Protokolliert die Anzahl gefundener relevanter Ordner
         app_logger.info(f"{len(ordnerliste)} relevante Ordner für '{postfach_name}' gefunden")
+
+        # Gibt die Liste der relevanten Ordner zurück
         return ordnerliste
 
     except Exception as e:
+        # Protokolliert Fehler bei der Ordnerabfrage
         app_logger.error(f"Fehler beim Laden der Ordner für '{postfach_name}': {e}")
+        # Gibt eine leere Liste bei einem Fehler zurück
         return []
+
+
+def collect_folder_names(folder, path="", exclude=None, max_depth=float('inf'), current_depth=0):
+    """
+    Rekursive Funktion, um Ordnernamen ab einer gegebenen Ordnerstruktur zu sammeln.
+    Berücksichtigt optional eine maximale Ordnertiefe.
+
+    Args:
+        folder: Der aktuelle Ordner, dessen Subordner durchsucht werden sollen.
+        path: Der aktuelle Pfad (für vollständige Pfadangaben im Ergebnis).
+        exclude: Eine Liste von zu ignorierenden Ordnernamen (optional).
+        max_depth: Die maximale Ordnertiefe (optional, Standard: kein Limit).
+        current_depth: Die aktuelle Tiefe der Rekursion (intern verwendet, Standard: 0).
+
+    Returns:
+        list: Eine Liste aller gefundenen Ordnerpfade.
+    """
+    folder_list = []
+    full_path = f"{path}/{folder.Name}" if path else folder.Name
+    folder_name_lower = folder.Name.lower()
+
+    # Ausschluss durch Namensfilter
+    if exclude and any(blocked in folder_name_lower for blocked in exclude):
+        app_logger.debug(f"Ordner ausgeschlossen (Name gefiltert): {full_path}")
+        return folder_list
+
+    # Überprüfe die maximale Tiefe
+    if current_depth > max_depth:
+        app_logger.debug(f"Maximale Tiefe erreicht ({current_depth}/{max_depth}) für Ordner: {full_path}")
+        return folder_list
+
+    # Nur Ordner mit Inhalt
+    try:
+        item_count = folder.Items.Count
+    except Exception:
+        item_count = 0  # Zugriffsfehler ignorieren
+
+    if item_count > 0:
+        folder_list.append(full_path)
+        app_logger.debug(f"Ordner akzeptiert: {full_path} ({item_count} Elemente)")
+    else:
+        app_logger.debug(f"Ordner ohne Inhalt übersprungen: {full_path}")
+
+    # Rekursion: Gehe nur tiefer, wenn die maximale Tiefe noch nicht erreicht ist
+    if current_depth < max_depth:
+        for subfolder in folder.Folders:
+            folder_list.extend(collect_folder_names(
+                subfolder,
+                full_path,
+                exclude,
+                max_depth,
+                current_depth + 1
+            ))
+
+    return folder_list
+
 
 def lade_emails(postfach_name: str, ordner_pfad: str) -> list[Email]:
     """

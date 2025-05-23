@@ -14,14 +14,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 from logger import LEVEL_NAME_MAP  # LEVEL_NAME_MAP korrekt importieren
-from config import DEBUG_LEVEL  # Importiert die Konfiguration des Debug-Levels
+from config import DEBUG_LEVEL, MAX_FOLDER_DEPTH  # Importiere relevante Konfigurationen
 
-# LEVEL_NAME_MAP = {
-#     0: "ERROR",
-#     1: "WARNING",
-#     2: "INFO",
-#     3: "DEBUG",
-# }
 
 class MyMainWindow(QMainWindow):
     """
@@ -56,7 +50,7 @@ class MyMainWindow(QMainWindow):
 
         # Initialisiert die Statusleiste zur Anzeige von Debug-Informationen
         level_name = LEVEL_NAME_MAP.get(DEBUG_LEVEL, f"Unbekannt ({DEBUG_LEVEL})")
-        self.statusBar().showMessage(f"Debug-Level: {level_name}.")
+        self.statusBar().showMessage(f"Debug-Level: {level_name} | Max. Suchtiefe für Ordnerabfrage: {MAX_FOLDER_DEPTH}")
         logger.debug("Statusleiste mit Debug-Level aktualisiert.")
 
         # Bindet zentrale Widgets der Anwendung für spätere Interaktionen
