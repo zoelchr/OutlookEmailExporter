@@ -65,6 +65,9 @@ class MyMainWindow(QMainWindow):
         self.table_view = bind_widget(QTableView, "tableView_Emails")
         self.action_exit = bind_widget(QObject, "actionExit")
 
+        self.table_view.setColumnWidth(0, 40)
+        self.table_view.horizontalHeader().setStretchLastSection(True)
+
         # Ausgabe von Widgets für Debugging
         logger.debug("Gefundene QObjects:")
         for child in self.findChildren(QObject):

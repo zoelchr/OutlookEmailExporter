@@ -260,6 +260,7 @@ def lade_emails(postfach_name: str, ordner_pfad: str) -> list[Email]:
 
     Returns:
         list[Email]: Eine Liste von `Email`-Objekten, die die wichtigsten E-Mail-Daten enthalten (z. B. Betreff, Absender, Empfangszeit).
+                     Die `Email`-Objekte entsprechen der Klasse `Email` aus `email_model.py`.
                      Gibt eine leere Liste zurück, falls keine E-Mails gefunden werden oder ein Fehler auftritt.
     """
     emails = []  # Liste zum Speichern der extrahierten E-Mails

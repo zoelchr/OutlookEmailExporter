@@ -1,5 +1,5 @@
 import logging
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QEvent
 from email_model import Email
 
 app_logger = logging.getLogger(__name__)
@@ -11,81 +11,249 @@ class EmailTableModel(QAbstractTableModel):
     """
 
     def __init__(self, emails: list[Email], parent=None):
+        """
+        Konstruktor für die Klasse `EmailTableModel`.
+
+        Initialisiert ein neues Tabellenmodell, welches die Darstellung und Verwaltung
+        von E-Mails in einer tabellarischen Oberfläche ermöglicht. Die übergebenen Daten
+        werden in der Instanz gespeichert und eine Kontrollliste (`checked_rows`) wird
+        erstellt, um den Status der Checkboxen für jede Zeile zu verwalten.
+
+        Parameter:
+            emails (list[Email]): Eine Liste von `Email`-Objekten, die die Daten für 
+                                  das Tabellenmodell bereitstellen.
+            parent (QObject, optional): Das übergeordnete Objekt, standardmäßig `None`.
+
+        Hauptaufgaben:
+        - Speichern der E-Mails für die tabellarische Darstellung.
+        - Initialisieren der Checkbox-Statusliste (`checked_rows`) mit `False` für jede Zeile
+          (indiziert, dass die Checkboxen in der Tabelle standardmäßig deaktiviert sind).
+        - Protokollieren der Gesamtanzahl der initialisierten E-Mails zur Debugging-Zwecken.
+
+        Beispiel:
+            emails = [
+                Email("01.01.2025 12:30", "John Doe", "john.doe@example.com", "Betreff A", outlook_item),
+                Email("02.01.2025 14:45", "Jane Smith", "jane.smith@example.com", "Betreff B", outlook_item)
+            ]
+
+            model = EmailTableModel(emails)
+        """
         super().__init__(parent)
         self.emails = emails
         self.checked_rows = [False] * len(emails)
-        app_logger.debug(f"📦 EmailTableModel initialisiert mit {len(emails)} E-Mails")
+        app_logger.debug(f"EmailTableModel initialisiert mit {len(emails)} E-Mails.")
 
-    def rowCount(self, parent=QModelIndex()):
+    # def rowCount(self, parent=QModelIndex()):
+    def rowCount(self, parent=None):
+        """
+        Bestimmt die Anzahl der Zeilen im Tabellenmodell.
+
+        Das Modell stellt jede E-Mail als eine Zeile dar. Die Gesamtanzahl der Zeilen
+        entspricht daher der Anzahl der gespeicherten E-Mails.
+
+        Parameter:
+            parent (QModelIndex, optional): Wird hier nicht verwendet, da das Modell flach ist
+            (ohne Verschachtelung).
+
+        Rückgabewert:
+            int: Die Anzahl der E-Mails im Modell (entspricht der Zeilenanzahl in der Tabelle).
+        """
         return len(self.emails)
 
-    def columnCount(self, parent=QModelIndex()):
-        return 5  # Spalten: Checkbox, Datum, Absendername, Absender-E-Mail, Betreff
+    # def columnCount(self, parent=QModelIndex()):
+    def columnCount(self, parent=None):
+        """
+        Gibt die Anzahl der Spalten zurück, die in der Tabelle angezeigt werden.
 
-    def data(self, index, role=Qt.DisplayRole):
+        Die Tabelle hat genau 5 Spalten:
+        1. Checkbox (zur Auswahl der E-Mail)
+        2. Datum & Uhrzeit der E-Mail
+        3. Name des Absenders
+        4. E-Mail-Adresse des Absenders
+        5. Betreff der Nachricht
+
+        Parameter:
+            parent (QModelIndex, optional): Wird hier nicht verwendet, da das Modell flach ist
+            (ohne Verschachtelung).
+
+        Rückgabewert:
+            int: Die feste Anzahl der Spalten (5).
+        """
+        return 5
+
+    def data(self, index, role):
+        """
+        Liefert die darzustellenden oder verwendeten Daten für eine bestimmte Zelle im Modell.
+
+        Die Methode wird von Views (wie einer QTableView) aufgerufen, um die Daten für eine bestimmte
+        Kombination aus Spalte, Zeile und Rolle bereitzustellen. Die Rückgabe hängt von der Spaltenposition
+        und der angeforderten Rolle ab.
+
+        Parameter:
+            index (QModelIndex): Index der Zelle, für die die Daten angefordert werden. Enthält Informationen
+                             zu Zeile und Spalte.
+            role (Qt.ItemDataRole): Rolle, die angibt, wie die Daten verwendet werden sollen.
+                                Häufig verwendete Rollen sind:
+                                - Qt.DisplayRole: Daten, die dargestellt werden sollen.
+                                - Qt.CheckStateRole: Status einer Checkbox.
+
+        Rückgabewert:
+        - Für `Qt.CheckStateRole` in Spalte 0: Gibt den Status der Checkbox (`Qt.Checked` oder `Qt.Unchecked`) zurück.
+        - Für `Qt.DisplayRole`: Gibt die Textdarstellung für die jeweilige Spalte zurück:
+            - Spalte 1: Empfangsdatum der E-Mail.
+            - Spalte 2: Name des Absenders.
+            - Spalte 3: E-Mail-Adresse des Absenders.
+            - Spalte 4: Betreff der E-Mail.
+        - None: Wenn der Index ungültig ist oder eine nicht unterstützte Rolle angefordert wird.
+
+        Besonderheiten:
+        - Spalte 0 (Checkbox-Spalte):
+            - CheckStateRole: Liefert den Zustand der Checkbox (basierend auf der `checked_rows`-Liste).
+            - DisplayRole: Gibt einen leeren String zurück, um die korrekte Anzeige der Checkbox zu ermöglichen.
+        - Andere Spalten (1 bis 4): Die jeweilige Eigenschaft des ausgewählten `Email`-Objekts wird basierend
+          auf der Spaltennummer zurückgegeben.
+
+        Beispiel:
+            Für `role=Qt.DisplayRole` und `col=1` wird das Empfangsdatum der E-Mail zurückgegeben.
+
+        """
         if not index.isValid():
             return None
 
+        # Hole Zeilen- und Spalteninformationen aus dem Index
         row = index.row()
         col = index.column()
+        app_logger.debug(f"Folgendes data()-Element wird aufgerufen – Zeile {row}, Spalte {col}, Rolle {role}")
 
+        # Verarbeite die Checkbox-Spalte (Spalte 0)
+        # Wenn die View den Status einer Checkbox für die erste Spalte (col == 0) abfragt, wird zurückgegeben:
+        # - ob das Element angehakt ist
+        # - (Qt.Checked) oder nicht (Qt.Unchecked).
+        # Der Status steht in der Liste self.checked.
+        #
+        # Qt.CheckStateRole (Rolle 12)
+        # - Diese Rolle repräsentiert den Status einer Checkbox in einer Zelle.
+        # - Erwartet entweder die Konstante Qt.Checked oder Qt.Unchecked zurückzugeben, abhängig davon, ob die Checkbox aktiviert oder deaktiviert ist.
         if col == 0:
             if role == Qt.CheckStateRole:
+                # Status der Checkbox: Geprüft oder ungeprüft
+                app_logger.debug(f"Spalte 0, Rolle Qt.CheckStateRole: {Qt.Checked if self.checked_rows[row] else Qt.Unchecked}")
                 return Qt.Checked if self.checked_rows[row] else Qt.Unchecked
             if role == Qt.DisplayRole:
-                return "" # <<< Das sorgt dafür, dass Qt die Checkbox korrekt anzeigt
-            return None
+                # Normalerweise reicht es bei einer Checkbox einen Leerstring zurückgeben, um die Checkbox korrekt anzeigen zu lassen.
+                # Für Debug-Text ausgeben kann es aber auch Sinn Qt.DisplayRole zu unterstützen.
+                app_logger.debug(f"Spalte 0, Rolle Qt.DisplayRole: {str(self.checked_rows[row])}")
+                return str(self.checked_rows[row]) # Gibt "True" oder "False" als String zurück
 
+            # Grundsätzlich werden zwei weitere Rollen abgefragt, die aber für diesen Anwendungsfall nicht benötigt werden.
+            #
+            # Qt.DecorationRole (Rolle 1)
+            # - Wird verwendet, um Dekorationen (z. B. Icons, Bilder) zurückzugeben.
+            # - Wenn Daten für diese Rolle angefordert werden, gibt das Modell ein QIcon, ein QPixmap oder eine andere grafische Darstellung zurück.
+            # - Verwendet für Zellen, die z. B. kleine Symbole oder Bilder anstelle von Text anzeigen sollen.
+            #
+            # Qt.EditRole (Rolle 6)
+            # - Diese Rolle wird abgefragt, wenn der Benutzer eine Zelle in den Bearbeitungsmodus bringt.
+            # - Wenn Qt.EditRole zurückgegeben wird, gibt das Modell den Wert zurück, der bearbeitet werden sollte (die Rohdaten).
+            # - Wird auch verwendet, um zu prüfen, ob Daten in der Zelle bearbeitbar sind oder welchen Wert eine Zelle speichern soll, nachdem der Benutzer sie ändert.
+            return None # Wenn die Rolle nicht Qt.DisplayRole oder Qt.CheckStateRole ist, wird None zurückgegeben.
+
+        # Hole die E-Mail, die zur aktuellen Zeile gehört
         email = self.emails[row]
 
+        # Verarbeitung für `Qt.DisplayRole`
         if role == Qt.DisplayRole:
             if col == 1:
-                return email.received
+                return email.received  # Empfangsdatum und -zeit
             elif col == 2:
-                return email.sender_name
+                return email.sender_name  # Name des Absenders
             elif col == 3:
-                return email.sender_email
+                return email.sender_email  # E-Mail-Adresse des Absenders
             elif col == 4:
-                return email.subject
+                return email.subject  # Betreff der Nachricht
 
+        # Wenn die Rolle nicht unterstützt wird, gib None zurück
         return None
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role != Qt.DisplayRole or orientation != Qt.Horizontal:
-            return None
+    # Diese Methode gibt den Text für die Kopfzeilen zurück.
+    def headerData(self, section, orientation, role):
+        """
+        Liefert die Kopfzeilendaten für die Tabelle (z. B. Spaltenbeschriftungen).
 
+        Diese Methode wird von der Ansicht (View) wie QTableView aufgerufen, um die Textbeschriftung
+        für die Kopfzeilen (horizontal oder vertikal) zu erhalten. Sie ermöglicht die Anpassung
+        der angezeigten Titel der Tabellenköpfe basierend auf der gewünschten Orientierung
+        und Rolle.
+
+        Parameter:
+            section (int): Die Position der Kopfzeile (z. B. Spalten- oder Zeilenindex).
+            orientation (Qt.Orientation): Gibt die Orientierung an:
+                - Qt.Horizontal: Für die Spaltenüberschriften.
+                - Qt.Vertical: Für die Zeilenüberschriften (wird hier nicht explizit behandelt).
+            role (Qt.ItemDataRole): Die Art der Information, die für die Kopfzeile benötigt wird.
+                Häufig genutzte Rolle:
+                - Qt.DisplayRole: Für den anzuzeigenden Text.
+
+        Rückgabewert:
+        str: Der Titel für die Kopfzeile, falls `role` und `orientation` zutreffen (bei Qt.DisplayRole und Qt.Horizontal).
+        Andere Werte werden an die Standardmethode `super().headerData` delegiert.
+
+        Besonderheiten:
+        - Überschreibt die horizontalen Kopfzeilen mit benutzerdefinierten Titeln (z. B. Spaltennamen).
+        - Nutzt eine Liste von Überschriften (`headers`), die den Spaltentiteln der Tabelle entsprechen.
+        - Delegiert alle anderen Anfragen (z. B. für vertikale Ausrichtung oder Rollen, die nicht DisplayRole sind) an die Standardimplementierung.
+
+        Beispiel:
+            headers = ["✓", "Datum & Uhrzeit", "Absendername", "Absender-E-Mail", "Betreff"]
+            - Spalte 0: "✓" steht für die Checkbox-Spalte.
+            - Spalte 1: Zeigt Datum und Uhrzeit an.
+            - Spalte 2: Name des Absenders.
+            - Spalte 3: E-Mail-Adresse des Absenders.
+            - Spalte 4: Betreff der E-Mail.
+
+        """
+        # Liste mit benutzerdefinierten Überschriften
         headers = ["✓", "Datum & Uhrzeit", "Absendername", "Absender-E-Mail", "Betreff"]
-        return headers[section] if section < len(headers) else None
 
+        # Überprüfe, ob die Rolle `Qt.DisplayRole` und die Orientierung horizontal sind
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+            # Gib die entsprechende Überschrift für die Spaltenindexnummer zurück
+            return headers[section]
+
+        # Standardrückgabe für alle anderen Fälle (z. B. vertikale Überschriften)
+        return super().headerData(section, orientation, role)
+
+
+    # Diese Methode gibt die Flags für eine Zelle zurück, die angeben, wie die Zelle interagiert werden kann (z.B. auswählbar, editierbar).
     def flags(self, index):
-        if not index.isValid():
-            return Qt.ItemIsEnabled
-        if index.column() == 0:
-            return Qt.ItemIsUserCheckable | Qt.ItemIsEnabled
-        else:
-            return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+        if not index.isValid(): # Wenn der Index ungültig ist, gib Qt.NoItemFlags zurück
+            return Qt.NoItemFlags
+        if index.column() == 0: # Wenn die erste Spalte (Checkbox-Spalte) angefragt wird, gib Qt.ItemIsEnabled, Qt.ItemIsUserCheckable und Qt.ItemIsEditable zurück
+            return Qt.ItemIsEnabled | Qt.ItemIsUserCheckable #| Qt.ItemIsEditable
+        return Qt.ItemIsEnabled #| Qt.ItemIsEditable #| Qt.ItemIsSelectable
 
-    def setData(self, index, value, role=Qt.EditRole):
+    #def setData(self, index, value, role=Qt.EditRole):
+    def setData(self, index, value, role):
         if not index.isValid():
-            app_logger.warning("⚠️ setData() aufgerufen mit ungültigem Index")
+            app_logger.warning("setData() aufgerufen mit ungültigem Index.")
             return False
 
         row = index.row()
         col = index.column()
-        app_logger.debug(f"✍️ setData(): Zeile={row}, Spalte={col}, Wert={value}, Rolle={role}")
+        app_logger.debug(f"setData() aufgerufen mit gültigem Index: Zeile={row}, Spalte={col}, Wert={value}, Rolle={role}")
 
         try:
             if col == 0 and role == Qt.CheckStateRole:
                 if 0 <= row < len(self.checked_rows):
-                    self.checked_rows[row] = int(value) == Qt.Checked
+                    self.checked_rows[row] = (value == Qt.Checked)
                     self.dataChanged.emit(index, index)
-                    app_logger.debug(f"✅ Checkbox in Zeile {row} auf {'aktiviert' if value == Qt.Checked else 'deaktiviert'} gesetzt")
-                    app_logger.debug(f"✍️ setData(): Zeile={row}, Spalte={col}, Wert={int(value)}, Rolle={role}")
+                    app_logger.debug(f"Checkbox in Zeile {row} auf {'aktiviert' if value == Qt.Checked else 'deaktiviert'} gesetzt")
+                    app_logger.debug(f"Aufruf setData() in Zeile {row} mit Wert {int(value)} für Rolle {role}.")
                     return True
                 else:
-                    app_logger.warning(f"⚠️ Zeilenindex außerhalb des gültigen Bereichs: {row}")
+                    app_logger.warning(f"Zeilenindex außerhalb des gültigen Bereichs: {row}")
         except Exception as e:
-            app_logger.error(f"❌ Fehler in setData(): {e}")
+            app_logger.error(f"Fehler in setData(): {e}")
 
         return False
 
@@ -102,52 +270,46 @@ class EmailTableModel(QAbstractTableModel):
         self.endResetModel()
         app_logger.debug("✅ Modell zurückgesetzt und aktualisiert")
 
-    def sort(self, column, order):
-        reverse = order == Qt.DescendingOrder
-        app_logger.debug(f"🔃 Sortierung gestartet: Spalte={column}, Richtung={'absteigend' if reverse else 'aufsteigend'}")
+    # def sort(self, column, order):
+    #     reverse = order == Qt.DescendingOrder
+    #     app_logger.debug(f"🔃 Sortierung gestartet: Spalte={column}, Richtung={'absteigend' if reverse else 'aufsteigend'}")
+    #
+    #     try:
+    #         if column == 1:
+    #             self.emails.sort(key=lambda email: email.received, reverse=reverse)
+    #         elif column == 2:
+    #             self.emails.sort(key=lambda email: email.sender_name.lower(), reverse=reverse)
+    #         elif column == 3:
+    #             self.emails.sort(key=lambda email: email.sender_email.lower(), reverse=reverse)
+    #         elif column == 4:
+    #             self.emails.sort(key=lambda email: email.subject.lower(), reverse=reverse)
+    #         else:
+    #             app_logger.debug("⏭️ Sortierung übersprungen (Checkbox-Spalte)")
+    #             return
+    #
+    #         self.layoutChanged.emit()
+    #         app_logger.debug("✅ Tabellenlayout nach Sortierung aktualisiert")
+    #
+    #     except Exception as e:
+    #         app_logger.error(f"❌ Fehler bei Sortierung: {e}")
 
-        try:
-            if column == 1:
-                self.emails.sort(key=lambda email: email.received, reverse=reverse)
-            elif column == 2:
-                self.emails.sort(key=lambda email: email.sender_name.lower(), reverse=reverse)
-            elif column == 3:
-                self.emails.sort(key=lambda email: email.sender_email.lower(), reverse=reverse)
-            elif column == 4:
-                self.emails.sort(key=lambda email: email.subject.lower(), reverse=reverse)
-            else:
-                app_logger.debug("⏭️ Sortierung übersprungen (Checkbox-Spalte)")
-                return
-
-            self.layoutChanged.emit()
-            app_logger.debug("✅ Tabellenlayout nach Sortierung aktualisiert")
-
-        except Exception as e:
-            app_logger.error(f"❌ Fehler bei Sortierung: {e}")
-
-
-from PySide6.QtCore import QEvent
-
-
-from PySide6.QtCore import QEvent, Qt
-
-def editorEvent(self, event, model, option, index):
-    # Überprüfe, ob der Index gültig ist und ob wir in der Checkbox-Spalte sind.
-    if not index.isValid() or index.column() != 0:
-        return False
-
-    # Wir interessieren uns nur für Mausklicks (Linksklick) und Doppelklicks.
-    if event.type() in (QEvent.MouseButtonRelease, QEvent.MouseButtonDblClick):
-        # Verarbeite nur den linken Mausklick und prüfe, ob der Klick im aktiven Zellbereich liegt.
-        if event.button() != Qt.LeftButton or not option.rect.contains(event.pos()):
-            return False
-
-        # Hier wird der aktuelle Zustand der Checkbox abgefragt.
-        current_state = self.data(index, Qt.CheckStateRole)
-        # Dort wird getoggelt: wenn aktuell gesetzt, dann auf Unchecked und umgekehrt.
-        new_state = Qt.Unchecked if current_state == Qt.Checked else Qt.Checked
-
-        # Setze den neuen Zustand mithilfe der setData-Methode.
-        return self.setData(index, new_state, Qt.CheckStateRole)
-
-    return False
+# def editorEvent(self, event, model, option, index):
+#     # Überprüfe, ob der Index gültig ist und ob wir in der Checkbox-Spalte sind.
+#     if not index.isValid() or index.column() != 0:
+#         return False
+#
+#     # Wir interessieren uns nur für Mausklicks (Linksklick) und Doppelklicks.
+#     if event.type() in (QEvent.MouseButtonRelease, QEvent.MouseButtonDblClick):
+#         # Verarbeite nur den linken Mausklick und prüfe, ob der Klick im aktiven Zellbereich liegt.
+#         if event.button() != Qt.LeftButton or not option.rect.contains(event.pos()):
+#             return False
+#
+#         # Hier wird der aktuelle Zustand der Checkbox abgefragt.
+#         current_state = self.data(index, Qt.CheckStateRole)
+#         # Dort wird getoggelt: wenn aktuell gesetzt, dann auf Unchecked und umgekehrt.
+#         new_state = Qt.Unchecked if current_state == Qt.Checked else Qt.Checked
+#
+#         # Setze den neuen Zustand mithilfe der setData-Methode.
+#         return self.setData(index, new_state, Qt.CheckStateRole)
+#
+#     return False
