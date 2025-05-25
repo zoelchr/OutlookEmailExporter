@@ -1,8 +1,5 @@
-D:/Dev/pycharm/OutlookEmailExporter/tests
-D:/ruedi/Pictures
-D:/Dev/pycharm/OutlookEmailExporter/utils
-D:/Dev/pycharm/OutlookEmailExporter/dist
-C:/Users/ruedi/Downloads/iCloud Fotos
-C:/Users/ruedi/Downloads
+D:/Temp
 D:/Dev/pycharm/OutlookEmailExporter/venv
-D:/Dev/pycharm/OutlookEmailExporter/venv/Scripts
+D:/Dev/pycharm/OutlookEmailExporter/logs
+D:/ruedi/Pictures
+C:/Users/ruedi/Downloads

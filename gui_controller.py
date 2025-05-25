@@ -157,6 +157,10 @@ def on_postfach_changed(gui, index):
             gui.combo_postfach.removeItem(placeholder_index)
             app_logger.debug("Platzhalter 'Bitte Postfach auswählen...' entfernt")
 
+        # Leere die Tabelle, da ein neues Postfach ausgewählt wurde.
+        app_logger.debug("Leere die Tabelle, da ein neues Postfach ausgewählt wurde.")
+        gui.table_view.setModel(EmailTableModel([]))  # Neues, leeres Modell setzen
+
         # Die Ordner zum gewählten Postfach werden geladen.
         postfach_name = gui.combo_postfach.currentText()
         verzeichnisse = get_outlook_ordner(postfach_name)
