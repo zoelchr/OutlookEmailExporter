@@ -1,5 +1,3 @@
-import logging
-app_logger = logging.getLogger(__name__)
 """
 email_model.py
 
@@ -7,7 +5,8 @@ Dieses Modul definiert die Datenstruktur für eine E-Mail, wie sie im Outlook-Ex
 verwendet wird. Die Klasse `Email` bildet die relevante Darstellung für die GUI und 
 für Exportfunktionen ab.
 """
-
+import logging
+app_logger = logging.getLogger(__name__)
 from dataclasses import dataclass
 
 @dataclass

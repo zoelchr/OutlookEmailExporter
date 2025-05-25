@@ -25,14 +25,14 @@ In diesem Fall:
 Das Modul `gui_controller.py` wird direkt nach der GUI-Initialisierung aus `outlook_email_exporter.py` aufgerufen.
 """
 import logging
-app_logger = logging.getLogger(__name__)
-
 from PySide6.QtWidgets import QApplication, QMessageBox, QHeaderView, QAbstractItemView
 from PySide6.QtCore import QTimer, Qt
 
 from outlook_connector import get_outlook_postfaecher, get_outlook_ordner, lade_emails
 from email_table_model import EmailTableModel
+from exportziel_manager import connect_gui_signals_exportziel_manager
 
+app_logger = logging.getLogger(__name__)
 
 def connect_gui_signals(gui):
     """Verbindet GUI-Elemente mit den zugehörigen Funktionen und initialisiert Inhalte.
@@ -71,6 +71,9 @@ def connect_gui_signals(gui):
     QTimer.singleShot(200, lambda: load_postfaecher_async(gui))
     app_logger.debug("Outlook-Ladevorgang geplant (200ms Verzögerung)")
 
+    # In der GUI-Initialisierung
+    connect_gui_signals_exportziel_manager(gui)
+    app_logger.debug(f"Combox exportziel: {gui.combo_exportziel} mit Logik verbunden.")
 
 def load_postfaecher_async(gui):
     """
@@ -120,9 +123,7 @@ def load_postfaecher_async(gui):
         if gui.combo_postfach:
             # Entfernt alle vorhandenen Einträge in der ComboBox, um sicherzustellen,
             # dass sie vor dem Hinzufügen neuer Elemente vollständig geleert ist.
-
-            # ComboBox leeren...
-            gui.combo_postfach.clear()
+            gui.combo_postfach.clear() # ComboBox leeren...
 
             # Füge einen allgemeinen Auswahlhinweis und die geladenen Postfächer hinzu.
             gui.combo_postfach.addItem("Bitte Postfach auswählen...")
@@ -135,9 +136,7 @@ def load_postfaecher_async(gui):
             # Mithilfe von `lambda index` wird die Funktion `on_postfach_changed` aufgerufen und gleichzeitig das benötigte
             # Argument `gui` übergeben. Ohne `lambda` könnte nur der Index verwendet werden, da das Signal `currentIndexChanged`
             # standardmäßig nur diesen bereitstellt.
-            gui.combo_postfach.currentIndexChanged.connect(
-                lambda index: on_postfach_changed(gui, index)
-            )
+            gui.combo_postfach.currentIndexChanged.connect(lambda index: on_postfach_changed(gui, index))
 
             # Erfolgreiche Initialisierung wird im Log dokumentiert.
             app_logger.debug("Postfächer erfolgreich geladen und verbunden.")
@@ -162,18 +161,17 @@ def on_postfach_changed(gui, index):
         postfach_name = gui.combo_postfach.currentText()
         verzeichnisse = get_outlook_ordner(postfach_name)
 
-        
+        # Die ComboBox für Verzeichnisse wird nur angezeigt, wenn mindestens ein Verzeichnis vorhanden ist.
         if gui.combo_verzeichnis:
             # Löscht alle bestehenden Einträge in der ComboBox für Verzeichnisse,
             # um sicherzustellen, dass sie vorhinige Inhalte nicht erneut anzeigt.
             gui.combo_verzeichnis.clear()
 
-            # Fügt einen Platzhalter-Hinweis "Bitte Verzeichnis auswählen..." zu ComboBox hinzu.
+            # Fügt einen Platzhalter-Hinweis "Bitte Verzeichnis auswählen …" zu ComboBox hinzu.
             # Dies hilft dem Benutzer, zu erkennen, dass ein Verzeichnis auszuwählen ist.
             gui.combo_verzeichnis.addItem("Bitte Verzeichnis auswählen...")
 
-            # Füllt die ComboBox mit den verfügbaren Verzeichnissen (Ordnern),
-            # die zuvor aus Outlook geladen wurden.
+            # Füllt die ComboBox mit den verfügbaren Verzeichnissen (Ordnern), die zuvor aus Outlook geladen wurden.
             gui.combo_verzeichnis.addItems(verzeichnisse)
 
             # Aktiviert die ComboBox, sodass der Benutzer mit ihr interagieren kann, nachdem sie gefüllt wurde.
@@ -184,12 +182,10 @@ def on_postfach_changed(gui, index):
 
             # Verknüpft die GUI-Verzeichnis-ComboBox mit der Methode on_verzeichnis_changed.
             # Jedes Mal, wenn der Benutzer die Auswahl in der ComboBox ändert, wird die Funktion `on_verzeichnis_changed` aufgerufen.
-            gui.combo_verzeichnis.currentIndexChanged.connect(
-                lambda index: on_verzeichnis_changed(gui, index)
-            )
+            gui.combo_verzeichnis.currentIndexChanged.connect(lambda index: on_verzeichnis_changed(gui, index))
 
             # Protokolliert die Anzahl der geladenen Verzeichnisse in die Logging-Daten.
-            app_logger.info(f"📂 {len(verzeichnisse)} Verzeichnisse für '{postfach_name}' geladen")
+            app_logger.debug(f"{len(verzeichnisse)} Verzeichnisse für '{postfach_name}' geladen")
         else:
             # Wenn die ComboBox nicht zugreifbar war (z. B. GUI-Problem):
             # Logge eine Warnung für den Benutzer und erläutere das Problem.
@@ -221,7 +217,7 @@ def on_verzeichnis_changed(gui, index):
         placeholder_index = gui.combo_verzeichnis.findText(placeholder_text)
         if placeholder_index != -1:
             gui.combo_verzeichnis.removeItem(placeholder_index)
-            app_logger.debug("ℹ️ Platzhalter 'Bitte Verzeichnis auswählen...' entfernt")
+            app_logger.debug("Platzhalter 'Bitte Verzeichnis auswählen...' entfernt")
 
         # Holt den aktuell im Postfach-ComboBox ausgewählten Text.
         postfach_name = gui.combo_postfach.currentText()
@@ -243,34 +239,37 @@ def on_verzeichnis_changed(gui, index):
         # Nach Abschluss des Imports wird die Anzahl der geladenen E-Mails protokolliert.
         app_logger.debug(f"Starte Mail-Import für Postfach='{postfach_name}', Ordner='{ordner_pfad}'")
         emails = lade_emails(postfach_name, ordner_pfad)
-        app_logger.info(f"Tabelle wird mit {len(emails)} E-Mails befüllt")
+        app_logger.debug(f"Tabelle wird mit {len(emails)} E-Mails befüllt")
 
+        # Erzeugt ein Modell mit der Klasse `EmailTableModel`, das die Datenstruktur für E-Mails kapselt.
         model = EmailTableModel(emails)
+
+        # Verknüpft das generierte Modell mit der Tabellenansicht (`table_view`) der GUI.
+        # Dadurch werden die Daten aus dem Modell in der Tabellendarstellung angezeigt.
         gui.table_view.setModel(model)
 
-        # gui.table_view.setSortingEnabled(True)
-        # gui.table_view.sortByColumn(1, Qt.DescendingOrder)  # nach Datum sortieren (Spalte 1)
-        #
-        # # Tabellenkopf vorbereiten
-        # header = gui.table_view.horizontalHeader()
-        # header.setStretchLastSection(False)
-        #
-        # # Resize-Strategie je Spalte
-        # header.setSectionResizeMode(0, QHeaderView.Fixed)  # Checkbox
-        # header.setSectionResizeMode(1, QHeaderView.Interactive)  # Datum
-        # header.setSectionResizeMode(2, QHeaderView.Interactive)  # Name
-        # header.setSectionResizeMode(3, QHeaderView.Interactive)  # E-Mail
-        # header.setSectionResizeMode(4, QHeaderView.Stretch)  # Betreff
-        #
-        # # Mindestbreiten setzen
-        # # Individuelle Mindestbreiten pro Spalte
-        # header.setMinimumSectionSize(10)  # kleiner Basisschutz
-        # gui.table_view.setColumnWidth(0, 26)  # Checkbox wirklich schmal
-        # gui.table_view.setColumnWidth(1, 120)
-        # gui.table_view.setColumnWidth(2, 180)
-        # gui.table_view.setColumnWidth(3, 220)
-        #
-        # gui.table_view.setEnabled(True)
+        # Für die Spalten einen Mindestbreite setzen
+        gui.table_view.setColumnWidth(0, 25) # Checkbox-Spalte
+        gui.table_view.setColumnWidth(1, 120)
+        gui.table_view.setColumnWidth(2, 180)
+        gui.table_view.setColumnWidth(3, 220)
+
+        # Resize-Strategie je Spalte
+        gui.table_view.horizontalHeader().setMinimumSectionSize(25)  # kleiner Basisschutz als Mindestbreite für Spalte 0
+        gui.table_view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)  # Spalte mit Checkbox fixieren
+        gui.table_view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Interactive)  # Datum
+        gui.table_view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Interactive)  # Name
+        gui.table_view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Interactive)  # E-Mail
+        gui.table_view.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)  # Betreff
+
+        # Konfiguriert den horizontalen Header der Tabellenansicht (`table_view`), sodass die
+        # letzte Spalte automatisch den noch verfügbaren Platz im Fenster ausfüllt.
+        gui.table_view.horizontalHeader().setStretchLastSection(True)
+
+        gui.table_view.setSortingEnabled(True)
+        gui.table_view.sortByColumn(1, Qt.DescendingOrder)  # nach Datum sortieren (Spalte 1)
+
+        gui.table_view.setEnabled(True)
 
         # Aktiviere Checkbox-Klickbarkeit
         gui.table_view.setEditTriggers(QAbstractItemView.AllEditTriggers)

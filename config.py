@@ -1,5 +1,3 @@
-import logging
-app_logger = logging.getLogger(__name__)
 """
 config.py
 
@@ -13,6 +11,8 @@ Unterstützt werden:
 - eine Liste von Postfächern, die in der GUI nicht angezeigt werden sollen,
 - eine Liste von Ordnernamen, die beim Laden der Outlook-Ordnerstruktur ignoriert werden sollen.
 """
+import logging
+app_logger = logging.getLogger(__name__)
 
 import os
 from dotenv import load_dotenv

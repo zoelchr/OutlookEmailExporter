@@ -1,79 +1,92 @@
 """
-ui_loader.py
+Die Datei `my_main_window.py` enthält die Hauptlogik der Anwendung und definiert das
+Hauptfenster der GUI als Klasse `MyMainWindow`. Das Fenster basiert auf PySide6 und
+bindet dynamisch Widgets, die über Qt Designer erstellt wurden. 
 
+Hauptaufgaben dieser Datei:
+- Initialisierung und Anwendung der generierten Benutzeroberfläche (UI).
+- Bindung und Anpassung zentraler Widgets (z. B. Buttons, Komboboxen, Tabellenansicht).
+- Anzeige von Debug- und Statusinformationen in der Statusleiste.
+- Protokollierung und Prüfung der UI-Komponenten zur Unterstützung von Debugging und Fehlersuche.
 
+Diese Struktur ermöglicht eine flexible und modulare Erweiterung der GUI-Funktionalität.
 """
 import os  # Ermöglicht den Zugriff auf das Dateisystem
-
 from PySide6.QtUiTools import QUiLoader  # Lädt zur Laufzeit UI-Designs aus .ui-Dateien
 from PySide6.QtWidgets import QMainWindow, QComboBox, QPushButton, QTableView  # GUI-Komponenten
 from PySide6.QtCore import QFile, QObject, Qt  # Nützliche Klassen und Konstanten für GUI-Funktionen
-from ui_main_window import Ui_MainWindow  # Importieren des generierten Codes
 
 import logging
-logger = logging.getLogger(__name__)
-
+from ui_main_window import Ui_MainWindow  # Importieren des generierten Codes
 from logger import LEVEL_NAME_MAP  # LEVEL_NAME_MAP korrekt importieren
 from config import DEBUG_LEVEL, MAX_FOLDER_DEPTH  # Importiere relevante Konfigurationen
 
+logger = logging.getLogger(__name__)
 
 class MyMainWindow(QMainWindow):
     """
-    Die Klasse `MyMainWindow` repräsentiert das Hauptfenster der Anwendung.
-
-
+    Die Klasse `MyMainWindow` repräsentiert das Hauptfenster einer GUI-Anwendung, die 
+    auf PySide6 basiert. Sie enthält die Hauptlogik zur Initialisierung und Bedienung
+    der Benutzeroberfläche.
     """
+
     def __init__(self):
-        # Helfermethode zum Binden von Widgets mit Protokollierung
+
+        # Definiere eine interne Hilfsfunktion, um Widgets anhand ihres Namens und Typs zu finden
         def bind_widget(widget_class, name, level=2):
             """
-            Sucht ein Widget anhand seiner Klasse und seines Objekt-Namens und protokolliert das Ergebnis.
+            Bindet ein Widget (z. B. Buttons oder Komboboxen) an einen Python-Attributnamen.
+            Sucht innerhalb der UI nach einem Widget mit einem spezifischen Objekt-Namen.
+
+            :param widget_class: Klasse des Widgets (z. B. QComboBox, QPushButton).
+            :param name: Der Objekt-Name des Widgets.
+            :param level: Protokollierungslimit (standardmäßig 2, nur für Debugging).
+            :return: Das gefundene Widget oder None, wenn kein entsprechendes Widget existiert.
             """
             widget = self.findChild(widget_class, name, Qt.FindChildrenRecursively)
-            if widget:
-                logger.debug(f"Widget gebunden: {name}")
+            if widget and (level == 3):
+                logger.debug(f"Widget gebunden: {name}") # Ausgabe erfolgt nur im Debug-Modus
             else:
                 logger.warning(f"Widget NICHT gefunden: {name}")
             return widget
 
+        # Initialisierung der QMainWindow-Basisklasse
         super().__init__()
-        logger.debug(f"MyMainWindow init gestartet.")
+        logger.info(f"MyMainWindow init gestartet.")
 
-        # Die auf Basis Qt Designer generierte UI-Klasse
-        self.ui = Ui_MainWindow()  # Instanz der generierten UI-Klasse erstellen
-        self.ui.setupUi(self)  # Die GUI auf das aktuelle Fenster anwenden
-        logger.debug(f"Die generierte GUI wurde auf das aktuelle MyMainWindow angewendet.")
+        # Lade die generierte Benutzeroberfläche aus der `Ui_MainWindow`-Klasse
+        self.ui = Ui_MainWindow()  # Instanziiere die vom Designer erzeugte Klasse
+        self.ui.setupUi(self)  # Wende die UI auf dieses Hauptfenster an
+        logger.debug(f"Die generierte GUI wurde auf das aktuelle Fenster angewendet.")
 
-        # Initialisiert die Titelleiste des Hauptfensters
+        # Setze den Titel des Hauptfensters
         self.setWindowTitle("Outlook Email Exporter")
         logger.debug("Titelleiste des Hauptfensters initialisiert.")
 
-        # Initialisiert die Statusleiste zur Anzeige von Debug-Informationen
+        # Initialisiere die Statusleiste, um Debuginformationen anzuzeigen
         level_name = LEVEL_NAME_MAP.get(DEBUG_LEVEL, f"Unbekannt ({DEBUG_LEVEL})")
         self.statusBar().showMessage(f"Debug-Level: {level_name} | Max. Suchtiefe für Ordnerabfrage: {MAX_FOLDER_DEPTH}")
         logger.debug("Statusleiste mit Debug-Level aktualisiert.")
 
-        # Bindet zentrale Widgets der Anwendung für spätere Interaktionen
-        self.combo_postfach = bind_widget(QComboBox, "comboBox_Postfach")
-        self.combo_verzeichnis = bind_widget(QComboBox, "comboBox_Verzeichnis")
-        self.combo_exportziel = bind_widget(QComboBox, "comboBox_Exportziel")
+        # Binde Widgets aus der Benutzeroberfläche an lokale Attribute für spätere Verwendung
+        # Auswahlboxen
+        self.combo_postfach = bind_widget(QComboBox, "comboBox_Postfach", level=DEBUG_LEVEL)
+        self.combo_verzeichnis = bind_widget(QComboBox, "comboBox_Verzeichnis", level=DEBUG_LEVEL)
+        self.combo_exportziel = bind_widget(QComboBox, "comboBox_Exportziel", level=DEBUG_LEVEL)
+        # Buttons
+        self.button_export_msg = bind_widget(QPushButton, "pushButton_Export_MSG", level=DEBUG_LEVEL)
+        self.button_export_pdf = bind_widget(QPushButton, "pushButton_Export_PDF", level=DEBUG_LEVEL)
+        self.button_exit = bind_widget(QPushButton, "pushButton_Exit", level=DEBUG_LEVEL)
+        # Tabellenansicht
+        self.table_view = bind_widget(QTableView, "tableView_Emails", level=DEBUG_LEVEL)
+        # Menüleiste
+        self.action_exit = bind_widget(QObject, "actionExit", level=DEBUG_LEVEL)
 
-        self.button_export_msg = bind_widget(QPushButton, "pushButton_Export_MSG")
-        self.button_export_pdf = bind_widget(QPushButton, "pushButton_Export_PDF")
-        self.button_exit = bind_widget(QPushButton, "pushButton_Exit")
-
-        self.table_view = bind_widget(QTableView, "tableView_Emails")
-        self.action_exit = bind_widget(QObject, "actionExit")
-
-        self.table_view.setColumnWidth(0, 40)
-        self.table_view.horizontalHeader().setStretchLastSection(True)
-
-        # Ausgabe von Widgets für Debugging
+        # Debugging: Listet alle in der UI definierte Widgets und ihre Namen auf
         logger.debug("Gefundene QObjects:")
         for child in self.findChildren(QObject):
             cls_name = child.metaObject().className()
             obj_name = child.objectName()
             logger.debug(f"- {cls_name}: {obj_name if obj_name else '(kein Name)'}")
 
-        logger.debug("MyMainWindow erfolgreich initialisiert.")
-
+        logger.info("MyMainWindow erfolgreich initialisiert.")

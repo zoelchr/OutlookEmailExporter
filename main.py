@@ -1,6 +1,3 @@
-import logger
-import logging
-app_logger = logging.getLogger(__name__)  # dein echter Logger
 """
 outlook_email_exporter.py
 
@@ -18,20 +15,23 @@ from ui_main_window import Ui_MainWindow      # Importieren das Ui_MainWindow-Ha
 from my_main_window import MyMainWindow         # Importiert das MyMainWindow-Hauptfenster aus dem Modul ui_loader
 from gui_controller import connect_gui_signals
 
+import logger
+import logging
+app_logger = logging.getLogger(__name__)  # dein echter Logger
+
 # Protokollierung des Programmstarts für Debugging und Nachvollziehbarkeit
-app_logger.debug("Programmstart")
-app_logger.debug("GUI wird geladen...")
 app_logger.debug(f"Exportpfad laut .env: {EXPORT_PATH}")
+app_logger.debug("Programmstart...")
 
 # Hauptskriptblock: wird nur ausgeführt, wenn dieses Skript direkt gestartet wird
 if __name__ == "__main__":
 
     # Hier wird eine Instanz der QApplication erzeugt.
-    # - ist das zentrale Objekt einer PyQt- oder PySide-Anwendung. Es steuert das grundlegende Event-Handling und die Lebensdauer der GUI-Applikation. `QApplication`
+    # - ist das zentrale Objekt einer PySide-Anwendung. Es steuert das grundlegende Event-Handling und die Lebensdauer der GUI-Applikation. `QApplication`
     # - Es wird das Event-System von Qt initialisiert und auf die Kommandozeilenargumente `sys.argv` übergeben.
     # - Statt sys.argv kann auch eine leere Liste [] übergeben werden
     app = QApplication(sys.argv)
-    app_logger.info(f"Die Instanz QApplication wurde erzeugt.")
+    app_logger.debug(f"Die Instanz QApplication wurde erzeugt.")
 
     # - Es wird eine Instanz von MyMainWindow erzeugt. Dies ist das Hauptfenster der Anwendung.
     # - MyMainWindow basiert auf der Qt-Klasse und enthält alle wichtigen Elemente der Benutzeroberfläche (z. B. Menüs, Widgets etc.).
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # - Mit show() wird das Hauptfenster sichtbar gemacht und auf dem Bildschirm angezeigt.
     # - Es handelt sich um die Aufforderung an Qt, das Hauptfenster in das GUI-Ereignissystem zu integrieren und es anzuzeigen.
     window.show()
-    app_logger.info(f"MyMainWindow wird angezeigt.")
+    app_logger.debug(f"MyMainWindow wird angezeigt.")
 
     # - Die Methode app.exec() startet die Haupt-Ereignisschleife (Main Event Loop) der Qt-Anwendung. Diese Schleife ist verantwortlich für:
     #     - Das Weiterleiten von Benutzerinteraktionen (wie Mausklicks, Tastatureingaben) an die Anwendung.

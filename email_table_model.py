@@ -123,7 +123,8 @@ class EmailTableModel(QAbstractTableModel):
         # Hole Zeilen- und Spalteninformationen aus dem Index
         row = index.row()
         col = index.column()
-        app_logger.debug(f"Folgendes data()-Element wird aufgerufen – Zeile {row}, Spalte {col}, Rolle {role}")
+        #app_logger.debug(f"Folgendes data()-Element wird aufgerufen – Zeile {row}, Spalte {col}, Rolle {role}")
+        app_logger.trace(f"Folgendes data()-Element wird aufgerufen – Zeile {row}, Spalte {col}, Rolle {role}")
 
         # Verarbeite die Checkbox-Spalte (Spalte 0)
         # Wenn die View den Status einer Checkbox für die erste Spalte (col == 0) abfragt, wird zurückgegeben:
@@ -137,13 +138,13 @@ class EmailTableModel(QAbstractTableModel):
         if col == 0:
             if role == Qt.CheckStateRole:
                 # Status der Checkbox: Geprüft oder ungeprüft
-                app_logger.debug(f"Spalte 0, Rolle Qt.CheckStateRole: {Qt.Checked if self.checked_rows[row] else Qt.Unchecked}")
+                app_logger.trace(f"Spalte 0, Rolle Qt.CheckStateRole: {Qt.Checked if self.checked_rows[row] else Qt.Unchecked}")
                 return Qt.Checked if self.checked_rows[row] else Qt.Unchecked
-            if role == Qt.DisplayRole:
-                # Normalerweise reicht es bei einer Checkbox einen Leerstring zurückgeben, um die Checkbox korrekt anzeigen zu lassen.
-                # Für Debug-Text ausgeben kann es aber auch Sinn Qt.DisplayRole zu unterstützen.
-                app_logger.debug(f"Spalte 0, Rolle Qt.DisplayRole: {str(self.checked_rows[row])}")
-                return str(self.checked_rows[row]) # Gibt "True" oder "False" als String zurück
+            # if role == Qt.DisplayRole:
+            #     # Normalerweise reicht es bei einer Checkbox einen Leerstring zurückgeben, um die Checkbox korrekt anzeigen zu lassen.
+            #     # Für Debug-Text ausgeben kann es aber auch Sinn Qt.DisplayRole zu unterstützen.
+            #     app_logger.debug(f"Spalte 0, Rolle Qt.DisplayRole: {str(self.checked_rows[row])}")
+            #     return str(self.checked_rows[row]) # Gibt "True" oder "False" als String zurück
 
             # Grundsätzlich werden zwei weitere Rollen abgefragt, die aber für diesen Anwendungsfall nicht benötigt werden.
             #
@@ -230,7 +231,7 @@ class EmailTableModel(QAbstractTableModel):
             return Qt.NoItemFlags
         if index.column() == 0: # Wenn die erste Spalte (Checkbox-Spalte) angefragt wird, gib Qt.ItemIsEnabled, Qt.ItemIsUserCheckable und Qt.ItemIsEditable zurück
             return Qt.ItemIsEnabled | Qt.ItemIsUserCheckable #| Qt.ItemIsEditable
-        return Qt.ItemIsEnabled #| Qt.ItemIsEditable #| Qt.ItemIsSelectable
+        return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable
 
     #def setData(self, index, value, role=Qt.EditRole):
     def setData(self, index, value, role):
@@ -240,15 +241,21 @@ class EmailTableModel(QAbstractTableModel):
 
         row = index.row()
         col = index.column()
-        app_logger.debug(f"setData() aufgerufen mit gültigem Index: Zeile={row}, Spalte={col}, Wert={value}, Rolle={role}")
+        app_logger.trace(f"setData() aufgerufen mit gültigem Index: Zeile={row}, Spalte={col}, Wert={value}, Rolle={role}")
 
         try:
             if col == 0 and role == Qt.CheckStateRole:
                 if 0 <= row < len(self.checked_rows):
-                    self.checked_rows[row] = (value == Qt.Checked)
-                    self.dataChanged.emit(index, index)
-                    app_logger.debug(f"Checkbox in Zeile {row} auf {'aktiviert' if value == Qt.Checked else 'deaktiviert'} gesetzt")
-                    app_logger.debug(f"Aufruf setData() in Zeile {row} mit Wert {int(value)} für Rolle {role}.")
+                    #self.checked_rows[row] = (value == Qt.Checked)
+                    #self.dataChanged.emit(index, index)
+                    current = self.checked_rows[row]
+                    #print(f"Current Checked state {current}")
+                    new_value = not current
+                    #print(f"New Checked state {new_value}")
+                    self.checked_rows[row] = new_value
+                    self.dataChanged.emit(index, index, [Qt.CheckStateRole])
+                    app_logger.trace(f"Checkbox in Zeile {row} auf {'aktiviert' if value == Qt.Checked else 'deaktiviert'} gesetzt")
+                    app_logger.trace(f"Aufruf setData() in Zeile {row} mit Wert {int(value)} für Rolle {role}.")
                     return True
                 else:
                     app_logger.warning(f"Zeilenindex außerhalb des gültigen Bereichs: {row}")
@@ -263,35 +270,35 @@ class EmailTableModel(QAbstractTableModel):
         return selected
 
     def reset_data(self, emails: list[Email]):
-        app_logger.debug(f"🔁 reset_data(): Modell wird mit {len(emails)} E-Mails neu befüllt")
+        app_logger.debug(f"reset_data(): Modell wird mit {len(emails)} E-Mails neu befüllt")
         self.beginResetModel()
         self.emails = emails
         self.checked_rows = [False] * len(emails)
         self.endResetModel()
-        app_logger.debug("✅ Modell zurückgesetzt und aktualisiert")
+        app_logger.debug("Modell zurückgesetzt und aktualisiert")
 
-    # def sort(self, column, order):
-    #     reverse = order == Qt.DescendingOrder
-    #     app_logger.debug(f"🔃 Sortierung gestartet: Spalte={column}, Richtung={'absteigend' if reverse else 'aufsteigend'}")
-    #
-    #     try:
-    #         if column == 1:
-    #             self.emails.sort(key=lambda email: email.received, reverse=reverse)
-    #         elif column == 2:
-    #             self.emails.sort(key=lambda email: email.sender_name.lower(), reverse=reverse)
-    #         elif column == 3:
-    #             self.emails.sort(key=lambda email: email.sender_email.lower(), reverse=reverse)
-    #         elif column == 4:
-    #             self.emails.sort(key=lambda email: email.subject.lower(), reverse=reverse)
-    #         else:
-    #             app_logger.debug("⏭️ Sortierung übersprungen (Checkbox-Spalte)")
-    #             return
-    #
-    #         self.layoutChanged.emit()
-    #         app_logger.debug("✅ Tabellenlayout nach Sortierung aktualisiert")
-    #
-    #     except Exception as e:
-    #         app_logger.error(f"❌ Fehler bei Sortierung: {e}")
+    def sort(self, column, order):
+        reverse = order == Qt.DescendingOrder
+        app_logger.debug(f"Sortierung gestartet: Spalte={column}, Richtung={'absteigend' if reverse else 'aufsteigend'}")
+
+        try:
+            if column == 1:
+                self.emails.sort(key=lambda email: email.received, reverse=reverse)
+            elif column == 2:
+                self.emails.sort(key=lambda email: email.sender_name.lower(), reverse=reverse)
+            elif column == 3:
+                self.emails.sort(key=lambda email: email.sender_email.lower(), reverse=reverse)
+            elif column == 4:
+                self.emails.sort(key=lambda email: email.subject.lower(), reverse=reverse)
+            else:
+                app_logger.debug("Sortierung übersprungen (Checkbox-Spalte)")
+                return
+
+            self.layoutChanged.emit()
+            app_logger.debug("Tabellenlayout nach Sortierung aktualisiert")
+
+        except Exception as e:
+            app_logger.error(f"Fehler bei Sortierung: {e}")
 
 # def editorEvent(self, event, model, option, index):
 #     # Überprüfe, ob der Index gültig ist und ob wir in der Checkbox-Spalte sind.
