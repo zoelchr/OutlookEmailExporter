@@ -34,3 +34,7 @@ EXCLUDE_FOLDERNAMES = [s.strip().lower() for s in os.getenv("EXCLUDE_FOLDERNAMES
 
 # Maximale Suchtiefe nach Ordnern (0 = nur Postfach-Root, 1 = Postfach-Root + 1 Ebene, ...)
 MAX_FOLDER_DEPTH = int(os.getenv("MAX_FOLDER_DEPTH", "1"))
+
+# Maximale Anzahl Einträge in der Exportziel-Combobox
+MAX_SAVED_EXPORT_TARGETS = int(os.getenv("MAX_SAVED_EXPORT_TARGETS", "20"))
+MAX_ENV_EXPORT_TARGETS = int(os.getenv("MAX_ENV_EXPORT_TARGETS", "5"))

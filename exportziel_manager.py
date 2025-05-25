@@ -1,7 +1,9 @@
 import os
+import re
 import logging
 from PySide6.QtWidgets import QComboBox, QFileDialog, QDialog
 from dotenv import load_dotenv
+from config import MAX_ENV_EXPORT_TARGETS, MAX_SAVED_EXPORT_TARGETS
 
 app_logger = logging.getLogger(__name__)
 
@@ -13,9 +15,8 @@ class ExportzielManager:
         self.gui = gui
         self.combo_exportziel = self.gui.combo_exportziel  # Geändertes Widget: combo_exportziel
         self.saved_export_file = "export_history.txt"  # Datei zur Speicherung der letzten Exportziele
-        self.max_saved_targets = 50  # Maximalanzahl gespeicherter Exportziele
-        self.max_env_targets = 5     # Maximalanzahl aus der .env-Datei
-        self.max_combobox_items = 10 # Maximalanzahl von Einträgen in der ComboBox
+        self.max_saved_targets = MAX_SAVED_EXPORT_TARGETS  # Maximalanzahl gespeicherter Exportziele
+        self.max_env_targets = MAX_ENV_EXPORT_TARGETS     # Maximalanzahl aus der .env-Datei
 
         # Platzhalter- und zusätzlicher Text für ComboBox-Einträge
         self.placeholder_text = "Bitte vor Start des Exports ein Zielverzeichnis wählen..."
@@ -39,7 +40,7 @@ class ExportzielManager:
         self.combo_exportziel.clear()
         self.combo_exportziel.addItem(self.placeholder_text)
 
-        # Setze eine normalisierte Liste der Ziele aus der .env-Datei
+        # Erzeuge eine normalisierte Liste der vordefinierten Exportziele aus der .env-Datei
         normalized_env_targets = [os.path.normpath(target).replace("\\", "/") for target in self.prefixed_targets]
 
         # Füge Ziele aus .env zuerst hinzu
@@ -49,10 +50,6 @@ class ExportzielManager:
 
         # Füge zuletzt gespeicherte Verzeichnisse hinzu
         recent_targets = self.loadRecentExportTargets()
-
-        # Füge nur die Verzeichnisse hinzu, die nicht bereits in der .env-Datei enthalten sind
-        #for target in recent_targets[:self.max_combobox_items - len(self.prefixed_targets)]:  # Kombinieren
-        #    self.combo_exportziel.addItem(target)
 
         # Füge nur die Verzeichnisse hinzu, die nicht bereits in der .env-Datei enthalten sind
         for target in recent_targets:
@@ -215,3 +212,39 @@ def connect_gui_signals_exportziel_manager(gui):
     """
     exportziel_manager = ExportzielManager(gui) # Erstelle eine Instanz von ExportzielManager
     exportziel_manager.connectSignals()  # Verbindet Signale
+
+
+def ist_gueltiger_windows_pfad(pfad):
+    """
+    Überprüft, ob ein Pfad den generellen Regeln eines Windows-Dateipfads entspricht.
+    Der Pfad muss nicht existieren, wird aber auf Syntax geprüft.
+    """
+    # Maximale Länge prüfen (260 Zeichen für klassische Windows-Systeme)
+    if len(pfad) > 260:
+        app_logger.debug(f"Pfad ist zu lang: {len(pfad)} Zeichen.")
+        return False
+
+    # Zulässige Zeichen prüfen
+    ungueltige_zeichen = r'[<>:"/\\|?*]'
+    if re.search(ungueltige_zeichen, pfad):
+        app_logger.debug(f"Pfad enthält unzulässige Zeichen: {re.search(ungueltige_zeichen, pfad).group()}")
+        return False
+
+    # Reservierte Dateinamen prüfen (z.B. "CON", "PRN")
+    basename = os.path.basename(pfad)
+    reservierte_namen = {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4",
+                         "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3",
+                         "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"}
+    if basename.upper() in reservierte_namen:
+        app_logger.debug(f"Pfad enthält einen reservierten Namen: {basename}")
+        return False
+
+    # Pfad-Normalisierung erzwingen
+    try:
+        normalisierter_pfad = os.path.normpath(pfad)
+    except Exception as e:
+        app_logger.debug(f"Fehler bei der Normalisierung des Pfads: {e}")
+        return False
+
+    # Pfadangabe ist gültig
+    return True
