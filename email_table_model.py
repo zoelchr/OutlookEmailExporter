@@ -299,24 +299,3 @@ class EmailTableModel(QAbstractTableModel):
 
         except Exception as e:
             app_logger.error(f"Fehler bei Sortierung: {e}")
-
-# def editorEvent(self, event, model, option, index):
-#     # Überprüfe, ob der Index gültig ist und ob wir in der Checkbox-Spalte sind.
-#     if not index.isValid() or index.column() != 0:
-#         return False
-#
-#     # Wir interessieren uns nur für Mausklicks (Linksklick) und Doppelklicks.
-#     if event.type() in (QEvent.MouseButtonRelease, QEvent.MouseButtonDblClick):
-#         # Verarbeite nur den linken Mausklick und prüfe, ob der Klick im aktiven Zellbereich liegt.
-#         if event.button() != Qt.LeftButton or not option.rect.contains(event.pos()):
-#             return False
-#
-#         # Hier wird der aktuelle Zustand der Checkbox abgefragt.
-#         current_state = self.data(index, Qt.CheckStateRole)
-#         # Dort wird getoggelt: wenn aktuell gesetzt, dann auf Unchecked und umgekehrt.
-#         new_state = Qt.Unchecked if current_state == Qt.Checked else Qt.Checked
-#
-#         # Setze den neuen Zustand mithilfe der setData-Methode.
-#         return self.setData(index, new_state, Qt.CheckStateRole)
-#
-#     return False

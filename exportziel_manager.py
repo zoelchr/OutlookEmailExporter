@@ -224,7 +224,6 @@ class ExportzielManager:
             return [line.strip() for line in lines if line.strip()]
 
 
-    
     def saveExportTarget(self, target):
         """
         Fügt ein neues Exportziel zur Historie hinzu und speichert diese, 
@@ -288,6 +287,7 @@ class ExportzielManager:
 
         # Behandlung des speziellen Eintrags "Neues Exportziel wählen..."
         if target == self.new_target_text:
+            app_logger.debug(f"Starte Dialog zum Auswählen eines neuen Exportziels...")
             self.handleNewTarget()  # Öffnet Dialog oder führt eine Aktion aus, um ein neues Ziel zu wählen
             return
 
@@ -300,6 +300,62 @@ class ExportzielManager:
         self.saveExportTarget(target)
 
         app_logger.debug(f"Gewähltes Exportziel: {target}")
+
+
+    def handleNewTarget(self):
+        """
+        Öffnet einen Dialog zum Auswählen eines neuen Exportziels.
+        """
+        # Temporäres Blockieren des Signals, um endlose Zyklen zu vermeiden
+        self.combo_exportziel.blockSignals(True)
+
+        try:
+            # Debug-Ausgabe: Start des Dialogs
+            app_logger.debug("Öffne QFileDialog zum Auswählen eines neuen Exportziels...")
+
+            # QFileDialog mit korrektem Parent setzen
+            dialog = QFileDialog(self.gui)  # Parent ist das Haupt-Widget (GUI)
+            dialog.setFileMode(QFileDialog.Directory)  # Nur Verzeichnisse auswählen
+            dialog.setOption(QFileDialog.ShowDirsOnly, True)  # Keine Dateien anzeigen
+            dialog.setWindowTitle("Wählen Sie ein Exportziel aus")  # Dialogtitel setzen
+
+            # Debug-Ausgabe: Dialog geöffnet?
+            app_logger.debug("QFileDialog geöffnet.")
+
+            # Zeige Dialog und prüfe, ob der Benutzer etwas ausgewählt hat
+            if dialog.exec():
+                selected_dir = dialog.selectedFiles()[0]  # Verzeichnisauswahl (immer 1 bei QFileDialog)
+                app_logger.debug(f"Ausgewähltes Verzeichnis: {selected_dir}")  # Debug-Ausgabe
+
+                if selected_dir:  # Nur, wenn ein Verzeichnis ausgewählt wurde
+                    # Normalisiere den Pfad
+                    normalized_dir = os.path.normpath(selected_dir).replace("\\", "/")
+                    app_logger.debug(f"Ausgewähltes Verzeichnis (normalisiert): {normalized_dir}")
+
+                    # Prüfen, ob das Verzeichnis bereits in der ComboBox ist
+                    idx = self.combo_exportziel.findText(selected_dir)
+                    if idx == -1:
+                        # Neuer Eintrag zur combo_exportziel hinzufügen vor "Neues Exportziel wählen..."
+                        self.combo_exportziel.insertItem(self.combo_exportziel.count() - 1, normalized_dir)
+                        app_logger.debug(f"Neues Verzeichnis hinzugefügt: {normalized_dir}")  # Debug-Ausgabe
+
+                    # Speicher den Eintrag in der Historie
+                    self.saveExportTarget(normalized_dir)
+                    app_logger.debug(f"Verzeichnis in Historie gespeichert: {normalized_dir}")  # Debug-Ausgabe
+
+                    # Den neuen Eintrag in der ComboBox selektieren
+                    self.combo_exportziel.setCurrentText(normalized_dir)
+
+            else:
+                app_logger.debug("Der QFileDialog wurde abgebrochen.")  # Debug-Ausgabe für Abbruch
+
+        except Exception as e:
+            app_logger.warning(f"Fehler im Dialog: {e}")  # Fehlerprotokollierung für Debugging
+
+        finally:
+            # Reaktiviere Signale
+            self.combo_exportziel.blockSignals(False)
+
 
     def connectSignals(self):
         """
@@ -323,7 +379,7 @@ class ExportzielManager:
             app_logger.debug("Versuche, Signal 'currentIndexChanged' mit 'onExportTargetChanged' zu verbinden...")
             
             # Signal `currentIndexChanged` mit der Methode `onExportTargetChanged` verbinden
-            self.combo_exportziel.currentIndexChanged.connect(self.onExportTargetChanged)
+            self.combo_exportziel.currentIndexChanged.connect(lambda index: self.onExportTargetChanged(index))
             
             # Debug-Log, wenn die Signalverbindung erfolgreich war
             app_logger.debug("Signal erfolgreich verbunden!")
@@ -414,12 +470,12 @@ def connect_gui_signals_exportziel_manager(gui):
     exportziel_manager = ExportzielManager(gui)  # Erstelle eine `ExportzielManager`-Instanz
     exportziel_manager.connectSignals()  # Verbindet alle relevanten Signale mit Slots
 
-    # Beispielhafter Schritt: Pfadnormalisierung für einen Pfad durchführen
-    try:
-        normalisierter_pfad = os.path.normpath(pfad)  # Normalisieren eines Beispielpfads
-    except Exception as e:
-        app_logger.debug(f"Fehler bei der Normalisierung des Pfads: {e}")  # Fehler protokollieren
-        return False  # Vorgang als fehlgeschlagen beenden
-
-    # Erfolgreiche Verarbeitung und Signalverbindung
-    return True
+    # # Beispielhafter Schritt: Pfadnormalisierung für einen Pfad durchführen
+    # try:
+    #     normalisierter_pfad = os.path.normpath(pfad)  # Normalisieren eines Beispielpfads
+    # except Exception as e:
+    #     app_logger.debug(f"Fehler bei der Normalisierung des Pfads: {e}")  # Fehler protokollieren
+    #     return False  # Vorgang als fehlgeschlagen beenden
+    #
+    # # Erfolgreiche Verarbeitung und Signalverbindung
+    # return True

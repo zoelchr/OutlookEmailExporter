@@ -1,5 +1,6 @@
-D:/Temp
+D:/Dev/pycharm/OutlookEmailExporter/utils
 D:/Dev/pycharm/OutlookEmailExporter/venv
-D:/Dev/pycharm/OutlookEmailExporter/logs
-D:/ruedi/Pictures
 C:/Users/ruedi/Downloads
+D:/ruedi/Pictures
+D:/Temp
+D:/Dev/pycharm/OutlookEmailExporter/logs
