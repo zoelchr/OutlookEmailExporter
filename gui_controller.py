@@ -34,6 +34,10 @@ from exportziel_manager import connect_gui_signals_exportziel_manager
 
 app_logger = logging.getLogger(__name__)
 
+placeholder_text_postfach = "Bitte Postfach auswählen..."
+placeholder_text_verzeichnis = "Bitte Verzeichnis auswählen..."
+
+
 def connect_gui_signals(gui):
     """Verbindet GUI-Elemente mit den zugehörigen Funktionen und initialisiert Inhalte.
 
@@ -44,6 +48,14 @@ def connect_gui_signals(gui):
     ohne dass entsprechende Daten zur Verfügung stehen.
     """
     app_logger.debug("Verbinde GUI-Signale mit Logikfunktionen...")
+
+    # PDF-Export-Button
+    if gui.button_export_pdf:
+        try:
+            gui.button_export_pdf.clicked.connect(on_exit_clicked)
+            app_logger.debug("PDF-Export-Button verbunden.")
+        except Exception as e:
+            app_logger.error(f"Fehler beim Verbinden des PDF-Export-Buttons: {e}")
 
     # Exit-Button
     if gui.button_exit:
@@ -75,6 +87,11 @@ def connect_gui_signals(gui):
     connect_gui_signals_exportziel_manager(gui)
     app_logger.debug(f"Combox exportziel: {gui.combo_exportziel} mit Logik verbunden.")
 
+    # Export-Buttons initial deaktivieren
+    update_export_buttons_state(gui)
+
+
+
 def load_postfaecher_async(gui):
     """
     Lädt die verfügbaren Outlook-Postfächer und initialisiert die zugehörige Auswahl-ComboBox in der GUI.
@@ -104,6 +121,9 @@ def load_postfaecher_async(gui):
         app_logger.debug("Beginne asynchronen Outlook-Zugriff...")
         postfaecher = get_outlook_postfaecher()
 
+        # Export-Buttons initial deaktivieren
+        update_export_buttons_state(gui)
+
         # Falls keine Postfächer geladen werden konnten, zeige eine Warnung und verhindere weitere Aktionen.
         if not postfaecher:
             app_logger.warning("Keine Postfächer geladen – Outlook möglicherweise nicht erreichbar.")
@@ -126,7 +146,7 @@ def load_postfaecher_async(gui):
             gui.combo_postfach.clear() # ComboBox leeren...
 
             # Füge einen allgemeinen Auswahlhinweis und die geladenen Postfächer hinzu.
-            gui.combo_postfach.addItem("Bitte Postfach auswählen...")
+            gui.combo_postfach.addItem(placeholder_text_postfach)
             gui.combo_postfach.addItems(postfaecher)
 
             # Wähle standardmäßig den Hinweis-Eintrag "Bitte Postfach auswählen …" aus.
@@ -138,6 +158,9 @@ def load_postfaecher_async(gui):
             # standardmäßig nur diesen bereitstellt.
             gui.combo_postfach.currentIndexChanged.connect(lambda index: on_postfach_changed(gui, index))
 
+            # Aktualisiere den Zustand der Export-Buttons
+            update_export_buttons_state(gui)
+
             # Erfolgreiche Initialisierung wird im Log dokumentiert.
             app_logger.debug("Postfächer erfolgreich geladen und verbunden.")
 
@@ -145,21 +168,31 @@ def load_postfaecher_async(gui):
         # Fehlerbehandlung: Dokumentiere unerwartete Probleme im Log und verhindere Abstürze.
         app_logger.error(f"Fehler beim Laden der Outlook-Postfächer: {e}")
 
+        # Export-Buttons initial deaktivieren
+        update_export_buttons_state(gui)
+
 
 def on_postfach_changed(gui, index):
     """Wird aufgerufen, wenn ein Postfach ausgewählt wurde, d.h. index > 0."""
+
+    # Aktualisiere den Zustand der Export-Buttons
+    update_export_buttons_state(gui)
+
     if index > 0:
-        # Platzhalter "Bitte Postfach auswählen..." entfernen, falls vorhanden
+        # Platzhalter "Bitte Postfach auswählen …" entfernen, falls vorhanden
         # (wird nur beim ersten Aufruf benötigt)
-        placeholder_text = "Bitte Postfach auswählen..."
-        placeholder_index = gui.combo_postfach.findText(placeholder_text)
+        #placeholder_text = "Bitte Postfach auswählen..."
+        placeholder_index = gui.combo_postfach.findText(placeholder_text_postfach)
         if placeholder_index != -1:
             gui.combo_postfach.removeItem(placeholder_index)
-            app_logger.debug("Platzhalter 'Bitte Postfach auswählen...' entfernt")
+            app_logger.debug(f"Platzhalter '{placeholder_text_postfach}' entfernt")
 
         # Leere die Tabelle, da ein neues Postfach ausgewählt wurde.
         app_logger.debug("Leere die Tabelle, da ein neues Postfach ausgewählt wurde.")
         gui.table_view.setModel(EmailTableModel([]))  # Neues, leeres Modell setzen
+
+        # Aktualisiere den Zustand der Export-Buttons
+        update_export_buttons_state(gui)
 
         # Die Ordner zum gewählten Postfach werden geladen.
         postfach_name = gui.combo_postfach.currentText()
@@ -173,7 +206,7 @@ def on_postfach_changed(gui, index):
 
             # Fügt einen Platzhalter-Hinweis "Bitte Verzeichnis auswählen …" zu ComboBox hinzu.
             # Dies hilft dem Benutzer, zu erkennen, dass ein Verzeichnis auszuwählen ist.
-            gui.combo_verzeichnis.addItem("Bitte Verzeichnis auswählen...")
+            gui.combo_verzeichnis.addItem(placeholder_text_verzeichnis)
 
             # Füllt die ComboBox mit den verfügbaren Verzeichnissen (Ordnern), die zuvor aus Outlook geladen wurden.
             gui.combo_verzeichnis.addItems(verzeichnisse)
@@ -190,6 +223,9 @@ def on_postfach_changed(gui, index):
 
             # Protokolliert die Anzahl der geladenen Verzeichnisse in die Logging-Daten.
             app_logger.debug(f"{len(verzeichnisse)} Verzeichnisse für '{postfach_name}' geladen")
+
+            # Aktualisiere den Zustand der Export-Buttons
+            update_export_buttons_state(gui)
         else:
             # Wenn die ComboBox nicht zugreifbar war (z. B. GUI-Problem):
             # Logge eine Warnung für den Benutzer und erläutere das Problem.
@@ -208,20 +244,29 @@ def on_postfach_changed(gui, index):
                 "Versuchen Sie ggf. Outlook manuell (neu) zu starten.",
             )
 
+            # Aktualisiere den Zustand der Export-Buttons
+            update_export_buttons_state(gui)
+
             # Beendet die weitere Ausführung der Methode, da keine Verzeichnisse verarbeitet werden können.
             return
-        
+
+    # Aktualisiere den Zustand der Export-Buttons
+    update_export_buttons_state(gui)
+
 
 def on_verzeichnis_changed(gui, index):
     """Reaktion auf Verzeichniswahl: Checkbox-Platzhalter entfernen + Tabelle befüllen."""
+
+    # Aktualisiere den Zustand der Export-Buttons
+    update_export_buttons_state(gui)
+
     if index > 0:
         # Platzhalter "Bitte Verzeichnis auswählen …" entfernen, falls vorhanden
         # (wird nur beim ersten Aufruf benötigt)
-        placeholder_text = "Bitte Verzeichnis auswählen..."
-        placeholder_index = gui.combo_verzeichnis.findText(placeholder_text)
+        placeholder_index = gui.combo_verzeichnis.findText(placeholder_text_verzeichnis)
         if placeholder_index != -1:
             gui.combo_verzeichnis.removeItem(placeholder_index)
-            app_logger.debug("Platzhalter 'Bitte Verzeichnis auswählen...' entfernt")
+            app_logger.debug(f"Platzhalter '{placeholder_text_verzeichnis}' entfernt")
 
         # Holt den aktuell im Postfach-ComboBox ausgewählten Text.
         postfach_name = gui.combo_postfach.currentText()
@@ -242,11 +287,20 @@ def on_verzeichnis_changed(gui, index):
         # der durch das Postfach (`postfach_name`) und den Pfad (`ordner_pfad`) spezifiziert ist.
         # Nach Abschluss des Imports wird die Anzahl der geladenen E-Mails protokolliert.
         app_logger.debug(f"Starte Mail-Import für Postfach='{postfach_name}', Ordner='{ordner_pfad}'")
+
+        # Zeige dem Benutzer an, dass der Ladevorgang läuft
+        gui.statusBar().showMessage("E-Mails werden geladen...")
+
+
+        # Erzeuge das Modell und setze es in die Tabelle
         emails = lade_emails(postfach_name, ordner_pfad)
-        app_logger.debug(f"Tabelle wird mit {len(emails)} E-Mails befüllt")
 
         # Erzeugt ein Modell mit der Klasse `EmailTableModel`, das die Datenstruktur für E-Mails kapselt.
         model = EmailTableModel(emails)
+        app_logger.debug(f"Tabelle wird mit {len(emails)} E-Mails befüllt")
+
+        # Nach dem Laden: Statusmeldung aktualisieren oder entfernen
+        gui.statusBar().showMessage(f"{len(emails)} E-Mails geladen.", 3000)  # Meldung für 5 Sekunden anzeigen
 
         # Verknüpft das generierte Modell mit der Tabellenansicht (`table_view`) der GUI.
         # Dadurch werden die Daten aus dem Modell in der Tabellendarstellung angezeigt.
@@ -278,8 +332,60 @@ def on_verzeichnis_changed(gui, index):
         # Aktiviere Checkbox-Klickbarkeit
         gui.table_view.setEditTriggers(QAbstractItemView.AllEditTriggers)
 
+        # Export-Buttons initial deaktivieren
+        update_export_buttons_state(gui)
+
+    # Aktualisiere den Zustand der Export-Buttons
+    update_export_buttons_state(gui)
 
 def on_exit_clicked():
     """Beendet das Programm."""
-    app_logger.debug("🛑 Exit ausgelöst – Anwendung wird beendet")
+    app_logger.debug("Exit ausgelöst – Anwendung wird beendet")
     QApplication.quit()
+
+
+def update_export_buttons_state(gui):
+    """
+    Aktiviert oder deaktiviert die Export-Buttons basierend darauf, ob ein gültiges Postfach und ein gültiges Verzeichnis ausgewählt wurden.
+    Invalid sind Platzhaltertexte oder nicht gewählte Einträge.
+    """
+    app_logger.debug(f"Export-Buttons aktualisieren...")
+
+    # Platzhaltertexte für Postfach und Verzeichnis (anpassen, falls in der UI andere Texte genutzt werden)
+    #invalid_postfach_text = "Bitte Postfach auswählen..."
+    #invalid_verzeichnis_text = "Bitte Verzeichnis auswählen..."
+
+    # Überprüfen, ob ein gültiges Postfach ausgewählt wurde
+    if gui.combo_postfach.currentText() != placeholder_text_postfach:
+        if gui.combo_postfach.currentIndex() >= 0:
+            is_postfach_selected = True
+        else:
+            is_postfach_selected = False
+    else:
+        is_postfach_selected = False
+
+    app_logger.debug(f"Ausgewähltes Postfach = '{gui.combo_postfach.currentText()}' (Index {gui.combo_postfach.currentIndex()}) und Anzeige Platzhalter-Text = {gui.combo_postfach.currentText() != placeholder_text_postfach}")
+
+    # Überprüfen, ob ein gültiges Verzeichnis ausgewählt wurde
+    is_verzeichnis_selected = (
+            gui.combo_verzeichnis.currentIndex() > 0 and
+            (gui.combo_verzeichnis.currentText() != placeholder_text_verzeichnis)
+    )
+    if gui.combo_verzeichnis.currentText() != placeholder_text_verzeichnis:
+        if gui.combo_verzeichnis.currentIndex() >= 0:
+            is_verzeichnis_selected = True
+        else:
+            is_verzeichnis_selected = False
+    else:
+        is_verzeichnis_selected = False
+
+    app_logger.debug(f"Ausgewähltes Verzeichnis = '{gui.combo_verzeichnis.currentText()}' (Index {gui.combo_verzeichnis.currentIndex()}) und Anzeige Platzhalter-Text = {gui.combo_verzeichnis.currentText() != placeholder_text_verzeichnis}")
+
+    # Buttons deaktivieren, wenn eines der Kriterien nicht erfüllt ist
+    should_enable_buttons = is_postfach_selected and is_verzeichnis_selected
+    gui.button_export_msg.setEnabled(should_enable_buttons)
+    gui.button_export_pdf.setEnabled(should_enable_buttons)
+    gui.button_export_both.setEnabled(should_enable_buttons)
+
+    app_logger.debug(f"Export-Buttons aktualisiert: Postfach ausgewählt = {is_postfach_selected}, Verzeichnis ausgewählt = {is_verzeichnis_selected}, Buttons aktiviert = {should_enable_buttons}")
+

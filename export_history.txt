@@ -1,6 +1,7 @@
-D:/Dev/pycharm/OutlookEmailExporter/utils
-D:/Dev/pycharm/OutlookEmailExporter/venv
 C:/Users/ruedi/Downloads
-D:/ruedi/Pictures
 D:/Temp
+D:/ruedi/Pictures
+D:/Dev/pycharm/OutlookEmailExporter/dist
+D:/Dev/pycharm/OutlookEmailExporter/venv
+D:/Dev/pycharm/OutlookEmailExporter/utils
 D:/Dev/pycharm/OutlookEmailExporter/logs

@@ -13,7 +13,7 @@ Diese Struktur ermöglicht eine flexible und modulare Erweiterung der GUI-Funkti
 """
 import os  # Ermöglicht den Zugriff auf das Dateisystem
 from PySide6.QtUiTools import QUiLoader  # Lädt zur Laufzeit UI-Designs aus .ui-Dateien
-from PySide6.QtWidgets import QMainWindow, QComboBox, QPushButton, QTableView  # GUI-Komponenten
+from PySide6.QtWidgets import QMainWindow, QComboBox, QPushButton, QTableView, QDialog  # GUI-Komponenten
 from PySide6.QtCore import QFile, QObject, Qt  # Nützliche Klassen und Konstanten für GUI-Funktionen
 
 import logging
@@ -76,6 +76,7 @@ class MyMainWindow(QMainWindow):
         # Buttons
         self.button_export_msg = bind_widget(QPushButton, "pushButton_Export_MSG", level=DEBUG_LEVEL)
         self.button_export_pdf = bind_widget(QPushButton, "pushButton_Export_PDF", level=DEBUG_LEVEL)
+        self.button_export_both = bind_widget(QPushButton, "pushButton_Export_Both", level=DEBUG_LEVEL)
         self.button_exit = bind_widget(QPushButton, "pushButton_Exit", level=DEBUG_LEVEL)
         # Tabellenansicht
         self.table_view = bind_widget(QTableView, "tableView_Emails", level=DEBUG_LEVEL)
@@ -89,4 +90,38 @@ class MyMainWindow(QMainWindow):
             obj_name = child.objectName()
             logger.debug(f"- {cls_name}: {obj_name if obj_name else '(kein Name)'}")
 
+        # Instanz der Dialogklasse
+        self.info_dialog = None
+
+        def show_dialog(self, dialog_text):
+            if self.info_dialog is None:  # Falls der Dialog noch nicht existiert
+                self.info_dialog = InfoDialog(dialog_text, self)
+            self.info_dialog.show()
+
+        def update_dialog(self, dialog_text):
+            if self.info_dialog is not None:
+                self.info_dialog.update_text(dialog_text)
+
+        def close_dialog(self):
+            if self.info_dialog is not None:
+                self.info_dialog.close()
+                self.info_dialog = None
+
         logger.info("MyMainWindow erfolgreich initialisiert.")
+
+
+# Die erstellte Dialog-Klasse zur Steuerung des Statusdialogs
+class InfoDialog(QDialog):
+    def __init__(self, text, parent=None):
+        super().__init__(parent)
+
+        self.setWindowFlags(Qt.Dialog | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
+        layout = QVBoxLayout()
+        self.label = QLabel(text)
+        layout.addWidget(self.label)
+        self.setLayout(layout)
+        self.setWindowTitle("Info")
+        self.resize(300, 100)
+
+    def update_text(self, text):
+        self.label.setText(text)
