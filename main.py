@@ -14,6 +14,8 @@ from config import EXPORT_PATH                  # Importiert den Exportpfad aus 
 from ui_main_window import Ui_MainWindow      # Importieren das Ui_MainWindow-Hauptfenster aus dem Modul des generierten Codes
 from my_main_window import MyMainWindow         # Importiert das MyMainWindow-Hauptfenster aus dem Modul ui_loader
 from gui_controller import connect_gui_signals
+from exportziel_manager import get_exportziel_manager
+
 
 import logger
 import logging
@@ -42,6 +44,12 @@ if __name__ == "__main__":
     # - Die Funktion durchläuft alle relevanten Widgets der Klasse MyMainWindow (repräsentiert durch `window`).
     # - Für jedes relevante Signal der GUI-Komponenten verbindet sie ein Signal (`.clicked`, etc.) mit einer passenden Funktion (Slot).
     connect_gui_signals(window)
+
+    # Initialisierung des ExportzielManagers (Singleton mit GUI binden)
+    exportziel_manager = get_exportziel_manager(window)
+    # Optional: Prüfen, ob die Instanz initialisiert wurde
+    print(f"ExportzielManager erfolgreich initialisiert: {exportziel_manager is not None}")
+
 
     # - Mit show() wird das Hauptfenster sichtbar gemacht und auf dem Bildschirm angezeigt.
     # - Es handelt sich um die Aufforderung an Qt, das Hauptfenster in das GUI-Ereignissystem zu integrieren und es anzuzeigen.

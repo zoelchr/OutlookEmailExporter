@@ -71,6 +71,8 @@ from config import MAX_ENV_EXPORT_TARGETS, MAX_SAVED_EXPORT_TARGETS
 
 app_logger = logging.getLogger(__name__)
 
+exportziel_manager_instance = None  # Globale Referenz für die Singleton-Instanz
+
 class ExportzielManager:
     
     def __init__(self, gui):
@@ -279,17 +281,18 @@ class ExportzielManager:
 
         # Hole den aktuell ausgewählten Text aus der ComboBox
         target = self.combo_exportziel.currentText()
-        app_logger.debug(f"Gewählter Eintrag: {target}")
+        app_logger.debug(f"Der Eintrag '{target}' wurde angeklickt.")
 
         # Wenn der Platzhalter (z. B. "Bitte auswählen...") gewählt wurde, keine Aktion ausführen
         if target == self.placeholder_text:
+            app_logger.debug(f"Die Auswahl des Eintrags '{target}' wird ignoriert, daher keine Änderung des Exportziels.")
             return
 
         # Behandlung des speziellen Eintrags "Neues Exportziel wählen..."
         if target == self.new_target_text:
             app_logger.debug(f"Starte Dialog zum Auswählen eines neuen Exportziels...")
             self.handleNewTarget()  # Öffnet Dialog oder führt eine Aktion aus, um ein neues Ziel zu wählen
-            return
+            #return
 
         # Falls ein gültiges Ziel gewählt wurde, entferne den Platzhalter aus der Liste, falls er noch vorhanden ist
         idx = self.combo_exportziel.findText(self.placeholder_text)
@@ -297,9 +300,9 @@ class ExportzielManager:
             self.combo_exportziel.removeItem(idx)
 
         # Speichere das neue Ziel in der Historie und aktualisiere die Datei mit den zuletzt genutzten Exportzielen
-        self.saveExportTarget(target)
+        #self.saveExportTarget(target)
 
-        app_logger.debug(f"Gewähltes Exportziel: {target}")
+        app_logger.debug(f"Neues gewähltes Exportziel: {self.combo_exportziel.currentText()}")
 
 
     def handleNewTarget(self):
@@ -479,3 +482,25 @@ def connect_gui_signals_exportziel_manager(gui):
     #
     # # Erfolgreiche Verarbeitung und Signalverbindung
     # return True
+
+    # Zuordnung der Instanz für spätere Nutzung in der GUI
+    gui.exportziel_manager = exportziel_manager
+
+    # Rückgabe der Instanz, falls sie benötigt wird
+    return exportziel_manager
+
+
+def get_exportziel_manager(gui=None):
+    """
+    Gibt die Singleton-Instanz des `ExportzielManager` zurück.
+    Wenn die Instanz nicht vorhanden ist, wird sie mit der `gui`-Referenz erstellt.
+
+    :param gui: Referenz auf die GUI, notwendig für die Initialisierung.
+    :return: Singleton-Instanz des `ExportzielManager`.
+    """
+    global exportziel_manager_instance
+    if exportziel_manager_instance is None:
+        if gui is None:
+            raise ValueError("GUI-Referenz muss angegeben werden, um ExportzielManager zu initialisieren.")
+        exportziel_manager_instance = ExportzielManager(gui)  # Erstellt die Instanz
+    return exportziel_manager_instance
