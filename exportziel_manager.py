@@ -72,6 +72,7 @@ from config import MAX_ENV_EXPORT_TARGETS, MAX_SAVED_EXPORT_TARGETS
 app_logger = logging.getLogger(__name__)
 
 exportziel_manager_instance = None  # Globale Referenz für die Singleton-Instanz
+is_initializing = False  # Schutz gegen Rekursion
 
 class ExportzielManager:
     
@@ -100,8 +101,11 @@ class ExportzielManager:
         self.placeholder_text = "Bitte vor Start des Exports ein Zielverzeichnis wählen..."  # Platzhalter-Eintrag
         self.new_target_text = "Neues Exportziel wählen..."  # Eintrag für neue Zielauswahl
 
+        # Exportziele werden separat geladen
+        app_logger.debug("ExportzielManager wurde instanziiert.")
+
         # Initialisiere die Exportziel-ComboBox
-        self.initExportTargets()
+        #self.initExportTargets()
 
     def initExportTargets(self):
         """
@@ -191,6 +195,8 @@ class ExportzielManager:
         Prüft, ob ein ungültiger Eintrag (z. B. der Trennstrich) ausgewählt wurde,
         und setzt die Auswahl gegebenenfalls zurück.
         """
+        from gui_controller import update_export_buttons_state
+
         # Hole den aktuell ausgewählten Text basierend auf dem Index
         selected_item = self.combo_exportziel.itemText(index)
 
@@ -199,6 +205,9 @@ class ExportzielManager:
             # Setze die Auswahl zurück auf den ersten Eintrag (Platzhalter oder Standard-Wert)
             self.combo_exportziel.setCurrentIndex(0)
             return  # Beende die Methode, da ein gültiger Eintrag nicht vorliegt
+
+        # Export-Buttons initial deaktivieren
+        update_export_buttons_state(self.gui)
 
         # Protokolliere die getroffene Auswahl für Debugging-Zwecke
         app_logger.debug(f"Auswahl: {selected_item}")
@@ -498,9 +507,19 @@ def get_exportziel_manager(gui=None):
     :param gui: Referenz auf die GUI, notwendig für die Initialisierung.
     :return: Singleton-Instanz des `ExportzielManager`.
     """
-    global exportziel_manager_instance
+    global exportziel_manager_instance, is_initializing
+
     if exportziel_manager_instance is None:
+        if is_initializing:
+            raise RuntimeError("Kreisabhängigkeit beim Erstellen von ExportzielManager erkannt.")
+
         if gui is None:
             raise ValueError("GUI-Referenz muss angegeben werden, um ExportzielManager zu initialisieren.")
-        exportziel_manager_instance = ExportzielManager(gui)  # Erstellt die Instanz
+
+        try:
+            is_initializing = True  # Markiert, dass die Instanz gerade erstellt wird
+            exportziel_manager_instance = ExportzielManager(gui)  # Erstellt die Instanz
+        finally:
+            is_initializing = False  # Zurücksetzen nach der Initialisierung
+
     return exportziel_manager_instance

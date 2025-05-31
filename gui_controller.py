@@ -366,34 +366,59 @@ def on_verzeichnis_changed(gui, index):
 
 def on_export_msg_clicked(gui):
     """
-    Handler für das Klicken auf den 'Export MSG' Button.
-    Startet den Export der ausgewählten Emails als MSG-Dateien.
+    Verarbeitet das Klicken auf den 'Export MSG'-Button und startet den Export
+    der ausgewählten Emails als MSG-Dateien.
 
-    :param gui: Instanz des GUI-Controllers, der die erforderlichen Elemente bereitstellt.
+    Ablauf:
+    -------
+    1. Prüfen, ob ein Datenmodell für die Tabelle verfügbar ist.
+    2. Validieren, dass ein gültiges Exportverzeichnis ausgewählt wurde.
+    3. Initialisieren des ExportManagers mit dem Tabellenmodell und dem Exportverzeichnis.
+    4. Starten des Exports der ausgewählten E-Mails.
+    5. Abschluss-Feedback an den Benutzer.
+
+    Parameter:
+    ----------
+    gui : object
+        Die GUI-Instanz, die Verweise auf relevante Elemente wie die Tabellenansicht
+        und das Exportziel enthält.
+
+    Hinweis:
+    Bei Fehlern oder ungültigen Zuständen, wie z. B. einem leeren Datenmodell
+    oder keinem definierten Exportverzeichnis, wird der Ablauf abgebrochen und
+    der Benutzer entsprechend informiert.
     """
-    app_logger.debug("MSG-Export-Button wurde geklickt.")
+    app_logger.debug("'Export MSG'-Button wurde geklickt.")
 
-    # Export-Logik für `.msg`-Dateien hier einfügen
-
-    # 1. Abrufen des Tabellenmodells
+    # 1. Prüfen, ob ein Tabellenmodell vorhanden ist
     table_model = gui.table_view.model()
     if not table_model:
-        print("Fehler: Kein Tabellenmodell vorhanden.")
+        app_logger.error("Kein Tabellenmodell verfügbar. Der Export wird abgebrochen.")
+        QMessageBox.warning(gui, "Export fehlgeschlagen", "Keine Daten in der Tabelle verfügbar!")
         return
 
-    # 2. Abrufen des ausgewählten Exportziels
+    # 2. Überprüfen, ob ein gültiges Exportverzeichnis ausgewählt wurde
     export_directory = gui.combo_exportziel.currentText()
     if not export_directory:
-        print("Fehler: Kein Exportverzeichnis ausgewählt.")
+        app_logger.error("Kein gültiges Exportverzeichnis ausgewählt. Der Export wird abgebrochen.")
+        QMessageBox.warning(gui, "Export fehlgeschlagen", "Kein gültiges Exportverzeichnis ausgewählt!")
         return
 
-    # 3. Instanz der Exportklasse erstellen
-    email_exporter = ExportManager(table_model, export_directory)
+    try:
+        # 3. ExportManager-Instanz erstellen
+        email_exporter = ExportManager(table_model, export_directory)
 
-    # 4. Export durch die Klasse ausführen
-    email_exporter.export_emails()
+        # 4. Export durchführen
+        email_exporter.export_emails()
 
-    QMessageBox.information(gui, "Export MSG", "MSG-Export erfolgreich gestartet!")
+        # 5. Erfolgsrückmeldung an den Benutzer
+        QMessageBox.information(gui, "Export erfolgreich", "MSG-Export erfolgreich abgeschlossen!")
+        app_logger.debug("MSG-Export erfolgreich durchgeführt.")
+
+    except Exception as e:
+        # Fehlerprotokollierung und Benutzerhinweis
+        app_logger.error(f"Fehler beim MSG-Export: {e}")
+        QMessageBox.critical(gui, "Export fehlgeschlagen", f"Ein Fehler ist aufgetreten: {e}")
 
 
 def on_export_pdf_clicked(gui):
@@ -446,59 +471,72 @@ def on_exit_clicked():
 
 def update_export_buttons_state(gui):
     """
-    Aktiviert oder deaktiviert die Export-Buttons basierend darauf, ob ein gültiges Postfach und ein gültiges Verzeichnis ausgewählt wurden.
-    Invalid sind Platzhaltertexte oder nicht gewählte Einträge.
+    Aktualisiert den Aktivierungszustand der Export-Buttons basierend auf
+    den Benutzerauswahlen in der GUI.
+
+    Diese Funktion prüft, ob die erforderlichen Kriterien für den Export
+    erfüllt sind:
+    1. Ein gültiges Postfach ist ausgewählt.
+    2. Ein gültiges Verzeichnis ist ausgewählt.
+    3. Ein gültiges Exportziel ist definiert.
+
+    Wenn eine der Bedingungen nicht erfüllt ist, werden die Export-Buttons
+    deaktiviert, um eine falsche Verarbeitung zu verhindern.
+
+    Parameter:
+    ----------
+    gui : object
+        Die GUI-Instanz, die Referenzen zu den relevanten Elementen
+        (ComboBoxen und Buttons) enthält.
     """
-    app_logger.debug(f"Export-Buttons aktualisieren...")
+    app_logger.debug("Update des Zustands der Export-Buttons gestartet...")
 
-    # Platzhaltertexte für Postfach und Verzeichnis (anpassen, falls in der UI andere Texte genutzt werden)
-    #invalid_postfach_text = "Bitte Postfach auswählen..."
-    #invalid_verzeichnis_text = "Bitte Verzeichnis auswählen..."
+    try:
+        # Überprüfen, ob ein gültiges Postfach ausgewählt wurde
+        is_postfach_selected = (
+            gui.combo_postfach.currentText() != placeholder_text_postfach and gui.combo_postfach.currentIndex() >= 0
+        )
+        app_logger.debug(
+            f"Postfach-Auswahl überprüft: "
+            f"'{gui.combo_postfach.currentText()}' (Index: {gui.combo_postfach.currentIndex()}), "
+            f"gültig = {is_postfach_selected}"
+        )
 
-    # Überprüfen, ob ein gültiges Postfach ausgewählt wurde
-    if gui.combo_postfach.currentText() != placeholder_text_postfach:
-        if gui.combo_postfach.currentIndex() >= 0:
-            is_postfach_selected = True
-        else:
-            is_postfach_selected = False
-    else:
-        is_postfach_selected = False
+        # Überprüfen, ob ein gültiges Verzeichnis ausgewählt wurde
+        is_verzeichnis_selected = (
+            gui.combo_verzeichnis.currentText() != placeholder_text_verzeichnis and
+            gui.combo_verzeichnis.currentIndex() >= 0
+        )
+        app_logger.debug(
+            f"Verzeichnis-Auswahl überprüft: "
+            f"'{gui.combo_verzeichnis.currentText()}' (Index: {gui.combo_verzeichnis.currentIndex()}), "
+            f"gültig = {is_verzeichnis_selected}"
+        )
 
-    app_logger.debug(f"Ausgewähltes Postfach = '{gui.combo_postfach.currentText()}' (Index {gui.combo_postfach.currentIndex()}) und Anzeige Platzhalter-Text = {gui.combo_postfach.currentText() != placeholder_text_postfach}")
+        # Überprüfen, ob ein gültiges Exportziel gewählt wurde
+        is_exportziel_selected = is_valid_export_selection(gui)
 
-    # Überprüfen, ob ein gültiges Verzeichnis ausgewählt wurde
-    if gui.combo_verzeichnis.currentText() != placeholder_text_verzeichnis:
-        if gui.combo_verzeichnis.currentIndex() >= 0:
-            is_verzeichnis_selected = True
-        else:
-            is_verzeichnis_selected = False
-    else:
-        is_verzeichnis_selected = False
+        # Bestimme, ob die Buttons aktiviert werden sollten
+        should_enable_buttons = (
+            is_postfach_selected and
+            is_verzeichnis_selected and
+            is_exportziel_selected
+        )
 
-    # # Überprüfe, ob ein gültiges Verzeichnis als Exportziel ausgewählt wurde
-    # export_directory = gui.combo_exportziel.currentText()
-    # if gui.combo_exportziel.currentText() != export_directory:
-    #     if gui.combo_exportziel.currentIndex() >= 0:
-    #         is_exportziel_selected = True
-    #     else:
-    #         is_exportziel_selected = False
-    # else:
-    #     is_exportziel_selected = False
+        # Setze den Aktivierungszustand der Export-Buttons
+        gui.button_export_msg.setEnabled(should_enable_buttons)
+        gui.button_export_pdf.setEnabled(should_enable_buttons)
+        gui.button_export_both.setEnabled(should_enable_buttons)
 
-    is_exportziel_selected = is_valid_export_selection(gui)
-
-    app_logger.debug(f"Ausgewähltes Verzeichnis = '{gui.combo_verzeichnis.currentText()}' (Index {gui.combo_verzeichnis.currentIndex()}) und Anzeige Platzhalter-Text = {gui.combo_verzeichnis.currentText() != placeholder_text_verzeichnis}")
-
-    # Überprüfen, ob ein Verzeichnis als Exportziel ausgewählt wurde
-
-
-    # Buttons deaktivieren, wenn eines der Kriterien nicht erfüllt ist
-    should_enable_buttons = is_postfach_selected and is_verzeichnis_selected and is_exportziel_selected
-    gui.button_export_msg.setEnabled(should_enable_buttons)
-    gui.button_export_pdf.setEnabled(should_enable_buttons)
-    gui.button_export_both.setEnabled(should_enable_buttons)
-
-    app_logger.debug(f"Export-Buttons aktualisiert: Postfach ausgewählt = {is_postfach_selected}, Verzeichnis ausgewählt = {is_verzeichnis_selected}, Buttons aktiviert = {should_enable_buttons}")
+        app_logger.debug(
+            f"Export-Buttons aktualisiert: "
+            f"Postfach ausgewählt = {is_postfach_selected}, "
+            f"Verzeichnis ausgewählt = {is_verzeichnis_selected}, "
+            f"Exportziel gültig = {is_exportziel_selected}, "
+            f"Buttons aktiviert = {should_enable_buttons}"
+        )
+    except Exception as e:
+        app_logger.error(f"Fehler beim Aktualisieren des Button-Zustands: {e}")
 
 
 def is_valid_export_selection(gui) -> bool:

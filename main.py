@@ -48,6 +48,9 @@ if __name__ == "__main__":
     # Initialisierung des ExportzielManagers (Singleton mit GUI binden)
     exportziel_manager = get_exportziel_manager(window)
     # Optional: Prüfen, ob die Instanz initialisiert wurde
+    # Exportziele in der ComboBox initialisieren
+    exportziel_manager.initExportTargets()  # Nach Instanziierung aufrufen
+
     print(f"ExportzielManager erfolgreich initialisiert: {exportziel_manager is not None}")
 
 
