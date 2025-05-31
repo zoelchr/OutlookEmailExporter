@@ -1,10 +1,28 @@
 """
 outlook_email_exporter.py
 
-Hauptskript zum Starten der Anwendung. Es initialisiert das Qt-Framework, lädt die GUI,
-verbindet alle Steuersignale (über `gui_controller`) und startet die Ereignisschleife.
+Dieses Modul ist der zentrale Einstiegspunkt für das Outlook-Export-Tool. Es initialisiert
+die Hauptanwendung, richtet das Qt-Framework ein, lädt die grafische Benutzeroberfläche (GUI)
+und verbindet die Steuerlogik (z. B. Signal-Slot-Mechanismen) durch den `gui_controller`.
 
-Dieses Modul dient als zentraler Einstiegspunkt für das gesamte Outlook-Export-Tool.
+Funktionen und Aufgaben:
+-------------------------
+- Initialisierung der Qt-Anwendung und Ladeprozess der GUI-Komponenten.
+- Verbindung der Steuerlogik mit der Benutzeroberfläche (z. B. Listen oder Auswahlfelder).
+- Starten der Haupt-Ereignisschleife, um Interaktionen und Ereignisse in Echtzeit zu verarbeiten.
+
+Besonderheiten:
+---------------
+- Das Modul übernimmt die zentrale Aufgabe, verschiedene Teile der Anwendung (z. B. Konfiguration,
+  Export-Manager, Zielverzeichnisse) zu initialisieren und miteinander zu verbinden.
+- Enthält keine direkte Geschäftslogik, sondern dient ausschließlich der Anwendungssteuerung und dem Startprozess.
+- Unterstützt die Integration mit anderen Modulen wie `config.py`, `export_manager.py`, und `exportziel_manager.py`.
+
+Hinweise:
+---------
+Weitere Anpassungen und Konfigurationen der App (z. B. Pfadangaben, Debug-Stufen) können über das
+`config.py`-Modul vorgenommen werden. Alle relevanten Signale und Logiken werden durch die Instanz
+des `gui_controller` koordiniert.
 """
 from PySide6.QtWidgets import QApplication      # Importiert die QApplication-Klasse, die erforderlich ist, um eine Qt-Anwendung zu erstellen
 import sys                                      # Importiert das sys-Modul, um Zugriff auf Argumente und Systemfunktionen zu erhalten
@@ -16,8 +34,6 @@ from my_main_window import MyMainWindow         # Importiert das MyMainWindow-Ha
 from gui_controller import connect_gui_signals
 from exportziel_manager import get_exportziel_manager
 
-
-import logger
 import logging
 app_logger = logging.getLogger(__name__)  # dein echter Logger
 
@@ -51,7 +67,7 @@ if __name__ == "__main__":
     # Exportziele in der ComboBox initialisieren
     exportziel_manager.initExportTargets()  # Nach Instanziierung aufrufen
 
-    print(f"ExportzielManager erfolgreich initialisiert: {exportziel_manager is not None}")
+    app_logger.debug(f"ExportzielManager erfolgreich initialisiert: {exportziel_manager is not None}")
 
 
     # - Mit show() wird das Hauptfenster sichtbar gemacht und auf dem Bildschirm angezeigt.

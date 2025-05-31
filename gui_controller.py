@@ -216,9 +216,19 @@ def on_postfach_changed(gui, index):
         # Aktualisiere den Zustand der Export-Buttons
         update_export_buttons_state(gui)
 
+        # Zeige dem Benutzer an, dass der Ladevorgang läuft
+        # gui.statusBar().showMessage("Verzeichnisse des Postfachs werden geladen...")
+        loading_dialog = show_loading_dialog(gui, "Verzeichnisse des Postfachs werden geladen... Bitte warten.")
+
         # Die Ordner zum gewählten Postfach werden geladen.
         postfach_name = gui.combo_postfach.currentText()
         verzeichnisse = get_outlook_ordner(postfach_name)
+
+        # Nach dem Laden: Statusmeldung aktualisieren oder entfernen
+        #gui.statusBar().showMessage(f"{len(emails)} E-Mails geladen.", 3000)  # Meldung für 5 Sekunden anzeigen
+        loading_dialog.close()
+        result_message = f"{len(verzeichnisse)} Verzeichnisse des Postfachs '{postfach_name}' wurden geladen."
+        show_loading_dialog(gui, result_message, duration=2000)
 
         # Die ComboBox für Verzeichnisse wird nur angezeigt, wenn mindestens ein Verzeichnis vorhanden ist.
         if gui.combo_verzeichnis:

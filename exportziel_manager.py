@@ -1,111 +1,147 @@
 """
 Modul: exportziel_manager.py
 
-Dieses Modul enthält die Definition und Logik für die Verwaltung von Exportzielen in einer GUI-Anwendung.
-Es stellt Klassen und Methoden bereit, um GUI-Ereignisse, Pfadüberprüfungen, Normalisierungen
-und die Verbindung zwischen der Benutzeroberfläche und der Logik zu handhaben.
+Dieses Modul dient der Verwaltung von Exportzielen in einer GUI-Anwendung. Es kombiniert die
+Pfad-Validierung, Signalverwaltung und Benutzerinteraktionslogik in einer zentralen Komponente.
+Das Modul sorgt dafür, dass Benutzereingaben (z. B. Exportziele) validiert und verarbeitet werden
+und ermöglicht eine nahtlose Integration in die GUI.
 
-Hauptbestandteile:
-------------------
-1. Klasse `ExportzielManager`:
-   - Diese Klasse verwaltet die Logik, die mit den Exportzielen einer Benutzeroberfläche verbunden ist.
-   - Sie stellt Methoden zur Verfügung, um GUI-Elemente mit entsprechenden Signal-Slot-Mechanismen zu verbinden
-     und die korrekte Konfiguration sicherzustellen.
+Hauptfunktionen:
+-----------------
+1. **Klasse `ExportzielManager`:**
+   - Kernklasse für die Verwaltung und Verarbeitung von Exportzielen in der Anwendung.
+   - Verantwortlich für die Verbindung zwischen GUI-Komponenten (z. B. ComboBox) und der notwendigen Logik.
+   - Implementiert Signal-Slot-Mechanismen, um Benutzerinteraktionen zu verarbeiten.
 
-2. Methoden für Pfad-Verarbeitung:
-   - `ist_zulaessiger_pfad(pfad)`: Prüft, ob ein angegebener Pfad (lokal oder WebDAV-URL) gültig ist.
-   - `normalisiere_pfad(pfad)`: Normalisiert den angegebenen Pfad, um ein konsistentes Format sicherzustellen.
+2. **Pfad-Verarbeitungsmethoden:**
+   - `ist_zulaessiger_pfad(pfad)`: Überprüft, ob ein angegebener Pfad entweder eine gültige lokale Pfadangabe
+     oder eine WebDAV/HTTP(S)-URL ist.
+   - `normalisiere_pfad(pfad)`: Wandelt Pfade in ein konsistentes und standardisiertes Format um.
 
-3. Signal-Verwaltung:
-   - Verknüpft GUI-Signale (z. B. aus einer ComboBox) mit spezifischen Ereignis-Handlern, um Interaktionen zu verarbeiten.
+3. **Signalverwaltung:**
+   - Bindet Benutzeraktionen (z. B. Änderungen in einer ComboBox) an spezifische Ereignishandler.
+   - Stelle sicher, dass die Benutzeroberfläche dynamisch auf Änderungen reagieren kann.
 
-4. Unterstützende Hilfsmethoden:
-   - Methoden zur Fehlerprotokollierung und zur Validierung von Nutzereingaben in der GUI.
+4. **Hilfsmethoden und Protokollierung:**
+   - Protokollierung von Benutzeraktionen und Fehlern mithilfe des `app_logger`.
+   - Unterstützende Funktionen für das Laden und Speichern von Exportzielen sowie für die Validierung von Eingaben.
 
 Abhängigkeiten:
 ---------------
-Das Modul erfordert folgende Bibliotheken:
-- `os`: Zum Umgang mit Dateipfaden und für die Normalisierung lokaler Pfade.
-- `urllib.parse`: Für die Verarbeitung von URLs (z. B. WebDAV-URLs).
-- Eine Instanz des `app_logger`, um Protokollierungen für Debug- und Fehleranalysen durchzuführen.
+- **`os`**: Wird für die Arbeit mit Dateipfaden und deren Normalisierung verwendet.
+- **`urllib.parse`**: Unterstützt die Validierung und Verarbeitung von WebDAV/HTTP(S)-URLs.
+- Eine Logger-Instanz (`app_logger`), um Ereignisse und Fehler korrekt zu protokollieren.
 
 Verwendungszweck:
 -----------------
-Dieses Modul ist für die Verwaltung und Verarbeitung von Exportzielen in einer GUI vorgesehen.
-Es kann Signale einer Benutzeroberfläche mit der entsprechenden Logik verbinden und
-unterstützt dabei die Validierung und Normalisierung von Pfadeingaben.
+Das Modul wird für die Verwaltung und Bearbeitung von Exportzielen in einer GUI-Anwendung genutzt.
+Es stellt sicher, dass Benutzereingaben effektiv verarbeitet, validiert und gespeichert werden.
+Mit der Signal-Slot-Logik ermöglicht es eine reibungslose Integration in die Benutzeroberfläche
+und die dynamische Reaktion auf Interaktionen.
 
 Beispiel:
 ---------
-Nach der Integration dieses Moduls in die GUI-Anwendung kann es so verwendet werden:
+Die folgende Code-Skizze zeigt die typische Verwendung des Moduls in einer GUI-Anwendung:
 
-    from exportziel_manager import ExportzielManager, connect_gui_signals_exportziel_manager
+    from exportziel_manager import ExportzielManager
 
-    # ExportzielManager-Instanz erstellen und verbinden
+    # ExportzielManager-Instanz initialisieren und Signale verbinden
     exportziel_manager = ExportzielManager(gui)
     exportziel_manager.connectSignals()
 
-    # Pfad validieren und normalisieren
-    pfad = "C:\\Beispiele\\Test"
+    # Validierung und Normalisierung von Pfaden
+    pfad = "C:/Benutzer/Dokumente/Export"
     if exportziel_manager.ist_zulaessiger_pfad(pfad):
+        print("Pfad ist gültig.")
         normalisierter_pfad = exportziel_manager.normalisiere_pfad(pfad)
         print(f"Normalisierter Pfad: {normalisierter_pfad}")
     else:
-        print("Ungültiges Pfadformat!")
+        print("Ungültiger Pfad.")
 
 Hinweise:
 ---------
-- Beim Arbeiten mit WebDAV- oder HTTP(S)-URLs wird keine tiefere Validierung vorgenommen,
-  abgesehen von der Prüfung, ob das Schema korrekt ist.
-- Fehlerbehandlung und Protokollierung sollten beim Verbinden der Signale und bei der Pfadverarbeitung berücksichtigt werden.
+- Das Modul verarbeitet sowohl lokale Pfade als auch WebDAV/HTTP(S)-URLs.
+- Es wird empfohlen, bestehende Benutzerprofile oder Konfigurationsdateien zu nutzen,
+  um häufig verwendete Exportziele zu speichern und wiederzuverwenden.
+- Für komplexe Validierungen (z. B. Netzwerklaufwerke oder spezifische Berechtigungen)
+  sollte die Methode `ist_zulaessiger_pfad` angepasst oder erweitert werden.
 """
 import os
-import re
 import logging
 from urllib.parse import urlparse
-from PySide6.QtWidgets import QComboBox, QFileDialog, QDialog
+from PySide6.QtWidgets import QFileDialog
 from PySide6.QtCore import Qt
 from dotenv import load_dotenv
 
 from config import MAX_ENV_EXPORT_TARGETS, MAX_SAVED_EXPORT_TARGETS
 
+# Erstellen eines Loggers für Protokollierung von Ereignissen und Fehlern
 app_logger = logging.getLogger(__name__)
 
-exportziel_manager_instance = None  # Globale Referenz für die Singleton-Instanz
-is_initializing = False  # Schutz gegen Rekursion
+# Globale Referenz für die Singleton-Instanz des ExportzielManagers
+# Diese Referenz wird verwendet, um sicherzustellen, dass immer dieselbe Instanz verwendet wird.
+exportziel_manager_instance = None 
+
+# Schutzvariable, um zyklische Aufrufe und Rekursion bei der Initialisierung zu verhindern
+# (z.B. während der Erstellung oder Nutzung des ExportzielManagers).
+is_initializing = False 
 
 class ExportzielManager:
     
     def __init__(self, gui):
         """
-        Konstruktor der Klasse ExportzielManager.
-        
-        Initialisiert die Logik zur Handhabung von Exportzielen und konfiguriert die GUI-Elemente zur Auswahl und Verwaltung von Zielverzeichnissen. 
-        Die verfügbaren Ziele werden aus einer Konfigurationsdatei (.env) geladen oder aus den zuletzt verwendeten Exportzielen abgeleitet.
+        Konstruktor der Klasse.
+
+        Diese Methode initialisiert eine Instanz der Klasse und richtet alle erforderlichen Ressourcen und Verbindungen ein.
+        Sie wird aufgerufen, wenn ein neues Objekt dieser Klasse erstellt wird.
 
         Parameter:
-            gui (QObject): Die GUI-Instanz, welche die entsprechenden Widgets enthält (z. B. ComboBox für Exportziele).
+        ----------
+        gui : object
+            Die übergebene GUI-Instanz, die verwendet wird, um die grafischen Elemente (z. B. Widgets, Buttons, ComboBoxen etc.)
+            zu verwalten und mit Logik zu verbinden.
+
+        Ablauf:
+        -------
+        - Speichert die übergebene GUI-Referenz als Instanzvariable, um auf alle GUI-Elemente zugreifen zu können.
+        - Konfiguriert und initialisiert die Benutzeroberfläche (z. B., ComboBox-Einträge oder andere GUI-Elemente).
+        - Lädt globale oder Umgebungsdaten, die benötigt werden, um die Instanz korrekt zu konfigurieren.
+        - Verbindet GUI-Signale (Benutzeraktionen wie Klicks oder Auswahländerungen) mit entsprechenden Logikmethoden.
+
+        Hinweise:
+        ---------
+        - Dieser Konstruktor sollte nur einmal ausgeführt werden.
+        - Alle initialisierten Instanzvariablen sollten umfassend kommentiert werden, um ihre Rolle im Programm zu erklären.
         """
+        # Schreibe eine Protokollmeldung zum Start der Initialisierung der ComboBox (für Debugging-Zwecke).
         app_logger.debug(f"Start Initialisierung der ComboBox für die Auswahl von Exportzielen...")
 
-        # Initialisiere GUI-Elemente
+        # Eine Referenz zur GUI-Instanz wird gespeichert, um Zugriff auf die zugehörigen GUI-Komponenten zu ermöglichen.
         self.gui = gui
-        self.combo_exportziel = self.gui.combo_exportziel  # Bezug zur ComboBox für die Auswahl von Exportzielen
 
-        # Konfigurationsdateien und Speicherorte
-        self.saved_export_file = "export_history.txt"  # Datei zur Speicherung der zuletzt genutzten Exportverzeichnisse
-        self.max_saved_targets = MAX_SAVED_EXPORT_TARGETS  # Maximale Anzahl von gespeicherten Zielen
-        self.max_env_targets = MAX_ENV_EXPORT_TARGETS  # Maximale Anzahl von Zielen aus der .env-Datei
+        # Setzt eine Referenz auf die ComboBox zur Auswahl von Exportzielen aus der GUI.
+        # Diese ComboBox wird verwendet, um Exportziele anzuzeigen und vom Nutzer auswählen zu lassen.
+        self.combo_exportziel = self.gui.combo_exportziel
 
-        # Platzhalter- und Standardtexte für die ComboBox
-        self.placeholder_text = "Bitte vor Start des Exports ein Zielverzeichnis wählen..."  # Platzhalter-Eintrag
-        self.new_target_text = "Neues Exportziel wählen..."  # Eintrag für neue Zielauswahl
+        # Definiert den Dateipfad, in dem die zuletzt genutzten Exportverzeichnisse gespeichert werden.
+        self.saved_export_file = "export_history.txt"
 
-        # Exportziele werden separat geladen
+        # Legt die maximale Anzahl von gespeicherten Exportzielen fest, die in der Historie aufbewahrt werden dürfen.
+        self.max_saved_targets = MAX_SAVED_EXPORT_TARGETS
+
+        # Definiert die maximale Anzahl von Exportzielen, die aus den `.env`-Dateien (Umgebungsvariablen) geladen werden können.
+        self.max_env_targets = MAX_ENV_EXPORT_TARGETS
+
+        # Platzhaltertext, der in der ComboBox angezeigt wird, wenn kein Exportziel ausgewählt wurde.
+        # Dieser Text dient als hilfreiche Anleitung für den Benutzer.
+        self.placeholder_text = "Bitte vor Start des Exports ein Zielverzeichnis wählen..."
+
+        # Text, der in der ComboBox angezeigt wird, um dem Benutzer die Option zu geben, ein neues Exportziel hinzuzufügen.
+        self.new_target_text = "Neues Exportziel wählen..."
+
+        # Protokollmeldung zur Bestätigung, dass die Instanz des ExportzielManagers erfolgreich erstellt wurde.
         app_logger.debug("ExportzielManager wurde instanziiert.")
-
-        # Initialisiere die Exportziel-ComboBox
-        #self.initExportTargets()
+        
 
     def initExportTargets(self):
         """
@@ -191,9 +227,28 @@ class ExportzielManager:
 
     def on_combobox_changed(self, index):
         """
-        Wird aufgerufen, wenn die Auswahl in der ComboBox geändert wird.
-        Prüft, ob ein ungültiger Eintrag (z. B. der Trennstrich) ausgewählt wurde,
-        und setzt die Auswahl gegebenenfalls zurück.
+        Verarbeitet Änderungen in der Exportziel-ComboBox.
+
+        Diese Methode wird aufgerufen, wenn der Benutzer eine Auswahl in der
+        ComboBox (`combo_exportziel`) ändert. Sie verhindert ungültige
+        Auswahlen, wie z. B. den Trennstrich, und aktualisiert den Zustand
+        der zugehörigen Export-Buttons.
+
+        Parameter:
+        ----------
+        index : int
+        Der Index des aktuell ausgewählten Elements in der ComboBox.
+
+        Ablauf:
+        -------
+        1. Der Text des aktuell ausgewählten Elements wird basierend auf dem
+           übergebenen Index abgerufen.
+        2. Wenn der ausgewählte Eintrag ein ungültiges Element wie der 
+           Trennstrich ist, wird die Auswahl zurückgesetzt.
+        3. Die Verfügbarkeit der Export-Buttons wird aktualisiert, um 
+           sicherzustellen, dass sie nur bei gültigen Auswahlen aktiviert sind.
+        4. Die getroffene Auswahl wird im Log hinterlegt, um die Benutzer-
+           Interaktion zu verfolgen.
         """
         from gui_controller import update_export_buttons_state
 
@@ -215,23 +270,41 @@ class ExportzielManager:
 
     def loadRecentExportTargets(self):
         """
-        Liest die zuletzt verwendeten Exportziele aus einer Datei und gibt diese als Liste zurück.
-        
-        Rückgabewert:
-        - Eine Liste mit Exportzielen als Strings. Falls die Datei nicht existiert, wird eine leere Liste zurückgegeben.
-        """
-        # Überprüfen, ob die Datei mit den gespeicherten Exportzielen existiert
-        if not os.path.exists(self.saved_export_file):
-            return []  # Rückgabe einer leeren Liste, wenn die Datei fehlt
+        Liest die zuletzt verwendeten Exportziele aus einer Datei und gibt diese zurück.
 
-        # Datei im Lese-Modus mit UTF-8-Encoding öffnen
+        Diese Methode dient dazu, die Historie der zuletzt verwendeten Exportziele des Nutzers aus 
+        einer lokal gespeicherten Datei (`self.saved_export_file`) auszulesen. Falls die Datei 
+        nicht existiert, wird eine leere Liste zurückgegeben, um mögliche Fehler beim Lesen zu vermeiden.
+
+        Rückgabewert:
+        -------------
+        list:
+        - Eine Liste von Zeichenketten (Strings), die die zuletzt verwendeten 
+          Exportziel-Verzeichnisse repräsentieren.
+        - Falls die Datei fehlt oder keine gültigen Einträge enthält, wird eine leere 
+          Liste zurückgegeben.
+
+        Ablauf:
+        -------
+        1. Überprüfung, ob die Datei mit den gespeicherten Exportzielen existiert.
+        2. Bei Nicht-Existenz der Datei Rückgabe einer leeren Liste.
+        3. Datei mit UTF-8-Encoding öffnen und Zeilen auslesen.
+        4. Leerzeichen an den Rändern jeder Zeile entfernen und leere Zeilen überspringen.
+        5. Rückgabe einer Liste mit bereinigten Exportzielen.
+        """
+        # Überprüfe, ob die Datei existiert, in der die Exportziele gespeichert sind.
+        # Wenn die Datei nicht existiert, wird eine leere Liste zurückgegeben, da keine Werte gelesen werden können.
+        if not os.path.exists(self.saved_export_file):
+            return []  # Rückgabe einer leeren Liste bei nicht existierender Datei.
+
+        # Öffne die Datei mit UTF-8-Encoding, um ihre Inhalte im Lesemodus zu lesen.
         with open(self.saved_export_file, "r", encoding="utf-8") as file:
-            # Lese alle Zeilen aus der Datei
+            # Lese alle Zeilen aus der Datei in die `lines`-Liste.
             lines = file.readlines()
             
-            # Rückgabe der Inhalte als Liste:
-            # - Leerzeichen am Anfang und Ende jeder Zeile entfernen
-            # - Leere Zeilen werden übersprungen
+            # Verarbeite die gelesenen Inhalte:
+            # - Entferne führende und schließende Leerzeichen von jeder Zeile (strip()).
+            # - Filtere alle Zeilen heraus, die komplett leer sind.
             return [line.strip() for line in lines if line.strip()]
 
 
@@ -269,160 +342,250 @@ class ExportzielManager:
 
     def onExportTargetChanged(self, index):
         """
-        Wird aufgerufen, wenn die Auswahl in der ComboBox für Exportziele geändert wird.
-        
+        Wird aufgerufen, wenn die Auswahl eines Exportziels in der ComboBox geändert wird.
+
+        Zweck:
+        ------
+        Diese Methode reagiert auf die Änderung der Auswahl in der Exportziel-ComboBox.
+        Sie prüft die Gültigkeit der Auswahl, führt je nach ausgewähltem Ziel spezifische Aktionen aus
+        und aktualisiert konfigurationsrelevante Elemente.
+
         Ablauf:
-        - Verhindert die Verarbeitung ungültiger Indizes.
-        - Prüft, ob ein Platzhalter oder ein spezieller Eintrag (wie "Neues Exportziel wählen...") ausgewählt wurde,
-          und führt entsprechende Aktionen aus.
-        - Entfernt den Platzhalter, falls ein gültiges Ziel gewählt wird.
-        - Speichert das ausgewählte Exportziel in der Historie und aktualisiert die Liste.
+        -------
+        1. Protokolliert den Aufruf und den übermittelten Index für Debugging-Zwecke.
+        2. Ignoriert ungültige Indizes, wie -1.
+        3. Prüft auf speziell definierte Einträge (Platzhalter oder "Neues Ziel wählen").
+        4. Entfernt den Platzhalter aus der Liste, falls ein reguläres Ziel gewählt wurde.
 
         Parameter:
-        - index (int): Der Index des neu ausgewählten Eintrags in der ComboBox.
+        ----------
+        index : int
+        Der Index des neu ausgewählten Eintrags in der ComboBox.
         """
-        # Protokollierung für Debugging-Zwecke
+        # Schreibe eine Debug-Meldung mit Informationen zur Methode und dem Index (zur Nachverfolgung von Benutzeraktionen).
         app_logger.debug(f"onExportTargetChanged wurde aufgerufen. Index: {index}, Typ: {type(index)}")
 
-        # Verhindere Verarbeitung, falls der Index ungültig ist (z. B. -1)
+        # Ignoriere den Aufruf, wenn der Index ungültig ist (z. B. bei keiner Auswahl oder Rückstellung).
         if index < 0:
             return
 
-        # Hole den aktuell ausgewählten Text aus der ComboBox
+        # Hole den aktuell ausgewählten Text aus der ComboBox, um zu prüfen, welche Aktion ausgelöst werden soll.
         target = self.combo_exportziel.currentText()
-        app_logger.debug(f"Der Eintrag '{target}' wurde angeklickt.")
+        app_logger.debug(f"Der Eintrag '{target}' wurde ausgewählt.")
 
-        # Wenn der Platzhalter (z. B. "Bitte auswählen...") gewählt wurde, keine Aktion ausführen
+        # Überspringe die Verarbeitung, wenn der Platzhalter-Eintrag ausgewählt wurde.
         if target == self.placeholder_text:
-            app_logger.debug(f"Die Auswahl des Eintrags '{target}' wird ignoriert, daher keine Änderung des Exportziels.")
+            app_logger.debug(f"Die Auswahl des Platzhalters '{target}' wird ignoriert. Kein Exportziel wurde festgelegt.")
             return
 
-        # Behandlung des speziellen Eintrags "Neues Exportziel wählen..."
+        # Behandlung eines speziellen Textes (z. B. "Neues Exportziel wählen..."):
+        # Öffnet einen Dialog oder führt eine Aktion aus, um ein neues Exportziel hinzuzufügen.
         if target == self.new_target_text:
-            app_logger.debug(f"Starte Dialog zum Auswählen eines neuen Exportziels...")
-            self.handleNewTarget()  # Öffnet Dialog oder führt eine Aktion aus, um ein neues Ziel zu wählen
-            #return
+            app_logger.debug("Dialog zur Auswahl eines neuen Exportziels wird gestartet.")
+            self.handleNewTarget()
 
-        # Falls ein gültiges Ziel gewählt wurde, entferne den Platzhalter aus der Liste, falls er noch vorhanden ist
+        # Prüfen, ob der Platzhalter nach wie vor in der ComboBox existiert, und ihn entfernen, da ein gültiges Ziel gewählt wurde.
         idx = self.combo_exportziel.findText(self.placeholder_text)
         if idx != -1:
             self.combo_exportziel.removeItem(idx)
 
-        # Speichere das neue Ziel in der Historie und aktualisiere die Datei mit den zuletzt genutzten Exportzielen
-        #self.saveExportTarget(target)
-
+        # Protokolliert das neu ausgewählte und aktive Exportziel.
         app_logger.debug(f"Neues gewähltes Exportziel: {self.combo_exportziel.currentText()}")
 
 
     def handleNewTarget(self):
         """
-        Öffnet einen Dialog zum Auswählen eines neuen Exportziels.
+        Öffnet einen Dialog zum Auswählen eines neuen Exportziels und aktualisiert die Export-Historie.
+
+        Zweck:
+        ------
+        Diese Methode ermöglicht dem Benutzer, ein neues Exportziel-Verzeichnis auszuwählen.
+        Das gewählte Ziel wird in der ComboBox angezeigt, in der Historie gespeichert
+        und bei einer gültigen Auswahl als aktuelles Exportziel eingestellt.
+        
+        Ablauf:
+        -------
+        1. Blockiert vorübergehend die Signals der ComboBox, um Rekursionen oder unnötige Signalauslöser zu verhindern.
+        2. Öffnet den QFileDialog, damit der Benutzer ein Verzeichnis auswählen kann.
+        3. Überprüft, ob ein gültiges Verzeichnis ausgewählt wurde:
+            - Normalisiert den Pfad zur Standardform.
+            - Fügt das Verzeichnis zur ComboBox hinzu, falls es noch nicht vorhanden ist.
+            - Speichert das Verzeichnis in der Exportziel-Historie.
+            - Wählt das neue Verzeichnis als aktives Ziel in der ComboBox aus.
+        4. Bei Abbruch oder Fehler werden relevante Protokolle geschrieben, und die ComboBox-Signale
+           werden wieder aktiviert.
+
+        Besonderheiten:
+        ---------------
+        - Es wird geprüft, ob das ausgewählte Verzeichnis bereits in der ComboBox existiert.
+        - Das Hinzufügen eines neuen Ziels erfolgt vor Einträgen wie "Neues Exportziel wählen...", um
+          die Benutzerfreundlichkeit zu gewährleisten.
+        - Die Methode stellt sicher, dass keine endlosen Ereigniszyklen durch Signalwirkungen ausgelöst werden.
+
+        Behandlung im Fehlerfall:
+        -------------------------
+        Alle potenziellen Fehler bei der Auswahl eines Verzeichnisses oder beim Aktualisieren
+        der GUI werden abgefangen und protokolliert.
+
         """
-        # Temporäres Blockieren des Signals, um endlose Zyklen zu vermeiden
+        # Blockiert vorübergehend Signals der ComboBox, um Rekursionen oder unerwünschte Ereignisse zu verhindern
         self.combo_exportziel.blockSignals(True)
 
         try:
-            # Debug-Ausgabe: Start des Dialogs
+            # Debug-Meldungen zur Überwachung des Prozesses
             app_logger.debug("Öffne QFileDialog zum Auswählen eines neuen Exportziels...")
 
-            # QFileDialog mit korrektem Parent setzen
-            dialog = QFileDialog(self.gui)  # Parent ist das Haupt-Widget (GUI)
-            dialog.setFileMode(QFileDialog.Directory)  # Nur Verzeichnisse auswählen
-            dialog.setOption(QFileDialog.ShowDirsOnly, True)  # Keine Dateien anzeigen
-            dialog.setWindowTitle("Wählen Sie ein Exportziel aus")  # Dialogtitel setzen
+            # Initiierung des QFileDialogs mit spezifischen Optionen
+            dialog = QFileDialog(self.gui)  # Setzt das GUI-Hauptfenster als übergeordnetes Element
+            dialog.setFileMode(QFileDialog.Directory)  # Begrenzung auf Verzeichnisauswahl
+            dialog.setOption(QFileDialog.ShowDirsOnly, True)  # Nur Verzeichnisse anzeigen
+            dialog.setWindowTitle("Wählen Sie ein Exportziel aus")  # Dialogtitel
 
-            # Debug-Ausgabe: Dialog geöffnet?
-            app_logger.debug("QFileDialog geöffnet.")
-
-            # Zeige Dialog und prüfe, ob der Benutzer etwas ausgewählt hat
+            # Prüft, ob der Dialog erfolgreich ausgeführt wurde (Benutzer hat etwas ausgewählt)
             if dialog.exec():
-                selected_dir = dialog.selectedFiles()[0]  # Verzeichnisauswahl (immer 1 bei QFileDialog)
+                selected_dir = dialog.selectedFiles()[0]  # Erstes (und einziges) ausgewähltes Verzeichnis
                 app_logger.debug(f"Ausgewähltes Verzeichnis: {selected_dir}")  # Debug-Ausgabe
 
-                if selected_dir:  # Nur, wenn ein Verzeichnis ausgewählt wurde
-                    # Normalisiere den Pfad
+                # Prüfen, ob das Verzeichnis gültig ist
+                if selected_dir:
+                    # Normalisiere den Pfad (z. B. ersetze Backslashes durch Forward Slashes für Plattform-Konsistenz)
                     normalized_dir = os.path.normpath(selected_dir).replace("\\", "/")
                     app_logger.debug(f"Ausgewähltes Verzeichnis (normalisiert): {normalized_dir}")
 
-                    # Prüfen, ob das Verzeichnis bereits in der ComboBox ist
+                    # Überprüfen, ob das Verzeichnis bereits in der ComboBox existiert
                     idx = self.combo_exportziel.findText(selected_dir)
                     if idx == -1:
-                        # Neuer Eintrag zur combo_exportziel hinzufügen vor "Neues Exportziel wählen..."
+                        # Füge das Verzeichnis zur ComboBox hinzu, vor dem Eintrag "Neues Exportziel wählen..."
                         self.combo_exportziel.insertItem(self.combo_exportziel.count() - 1, normalized_dir)
-                        app_logger.debug(f"Neues Verzeichnis hinzugefügt: {normalized_dir}")  # Debug-Ausgabe
+                        app_logger.debug(f"Neues Verzeichnis hinzugefügt: {normalized_dir}")
 
-                    # Speicher den Eintrag in der Historie
-                    self.saveExportTarget(normalized_dir)
-                    app_logger.debug(f"Verzeichnis in Historie gespeichert: {normalized_dir}")  # Debug-Ausgabe
+                # Das Verzeichnis wird in der Historie persistent gespeichert
+                self.saveExportTarget(normalized_dir)
+                app_logger.debug(f"Verzeichnis in Historie gespeichert: {normalized_dir}")
 
-                    # Den neuen Eintrag in der ComboBox selektieren
-                    self.combo_exportziel.setCurrentText(normalized_dir)
+                # Setze das aktuelle Textfeld der ComboBox auf das neue Verzeichnis
+                self.combo_exportziel.setCurrentText(normalized_dir)
 
             else:
-                app_logger.debug("Der QFileDialog wurde abgebrochen.")  # Debug-Ausgabe für Abbruch
+                # Falls der Benutzer den Dialog abbricht
+                app_logger.debug("Der QFileDialog wurde abgebrochen.")
 
         except Exception as e:
-            app_logger.warning(f"Fehler im Dialog: {e}")  # Fehlerprotokollierung für Debugging
+            # Fehlerbehandlung und Protokollierung
+            app_logger.warning(f"Fehler beim Öffnen des Dialogs oder Verarbeiten des Verzeichnisses: {e}")
 
         finally:
-            # Reaktiviere Signale
+            # Reaktivieren der ComboBox-Signale nach Abschluss aller Aktionen
             self.combo_exportziel.blockSignals(False)
 
 
     def connectSignals(self):
         """
-        Verbindet die Signale der ComboBox `combo_exportziel` mit den zugehörigen Funktionen.
+        Verbindet die Signale der ComboBox `combo_exportziel` mit den zugehörigen Funktionen, 
+        um Benutzerinteraktionen zu verarbeiten.
+
+        Zweck:
+        ------
+        Diese Methode stellt sicher, dass Änderungen an der Auswahl in der ComboBox `combo_exportziel` 
+        erkannt und verarbeitet werden, indem sie das Signal `currentIndexChanged` mit der entsprechenden 
+        Methode `onExportTargetChanged` verbindet.
 
         Ablauf:
-        - Überprüft, ob die ComboBox `combo_exportziel` korrekt initialisiert wurde.
-        - Verbindet das Signal `currentIndexChanged` der ComboBox mit der Methode `onExportTargetChanged`, 
-          um Änderungen der Auswahl zu verarbeiten.
-        - Protokolliert den Verbindungsstatus für Debugging-Zwecke.
+        -------
+        1. Überprüft, ob die ComboBox `combo_exportziel` korrekt initialisiert wurde:
+        - Falls die ComboBox nicht existiert (None), wird eine Debug-Warnung protokolliert.
+        - Falls die ComboBox korrekt vorhanden ist, wird mit der Signalverbindung fortgefahren.
+        2. Verbindet das Signal `currentIndexChanged` der ComboBox mit der Methode `onExportTargetChanged`,
+        um Änderungen der Auswahl zu behandeln.
+        3. Protokolliert den Status und die Ergebnisse der Verbindung zur Unterstützung des Debuggings.
+
+        Besonderheiten:
+        ---------------
+        - Verbindet das Signal mit einer Lambda-Funktion, um den Index als Argument an die Methode `onExportTargetChanged` zu übergeben.
+        - Unterstützt Debugging durch detaillierte Log-Ausgaben in allen Schritten.
+        - Stellt sicher, dass die Signalverbindung nur bei einer korrekt initialisierten ComboBox erfolgt.
+
+        Fehlerbehandlung:
+        -----------------
+        Es gibt keine direkten Fehlerbehandlungen innerhalb dieser Methode. Falls die ComboBox nicht 
+        existiert, wird eine Debug-Warnung protokolliert, und die Signalverbindung wird nicht durchgeführt.
+
         """
         # Prüfen, ob die Referenz auf die ComboBox existiert
         if self.combo_exportziel is None:
-            # Debug-Log, wenn die ComboBox nicht initialisiert ist
+            # Debug-Log: ComboBox ist nicht initialisiert
             app_logger.debug("combo_exportziel ist None. Überprüfen Sie die GUI-Referenz.")
         else:
-            # Debug-Log, wenn die ComboBox korrekt initialisiert wurde
+            # Debug-Log: ComboBox wurde korrekt gefunden
             app_logger.debug("combo_exportziel ist korrekt initialisiert.")
-            
-            # Debug-Log zum Versuch einer Signalverbindung
+
+            # Protokolliert den Beginn der Signalverbindung
             app_logger.debug("Versuche, Signal 'currentIndexChanged' mit 'onExportTargetChanged' zu verbinden...")
-            
+
             # Signal `currentIndexChanged` mit der Methode `onExportTargetChanged` verbinden
             self.combo_exportziel.currentIndexChanged.connect(lambda index: self.onExportTargetChanged(index))
-            
-            # Debug-Log, wenn die Signalverbindung erfolgreich war
+
+            # Debug-Log nach erfolgreicher Verbindungsherstellung
             app_logger.debug("Signal erfolgreich verbunden!")
+
 
     def ist_zulaessiger_pfad(self, pfad):
         """
-        Überprüft, ob der angegebene Pfad entweder eine gültige lokale Pfadangabe 
-        oder eine gültige WebDAV/HTTP(S)-URL ist.
+        Überprüft, ob der angegebene Pfad ein gültiger lokaler Pfad oder eine gültige WebDAV/HTTP(S)-URL ist.
+
+        Zweck:
+        ------
+        Diese Methode dient der Validierung von Pfaden, die entweder als WebDAV-/HTTP(S)-URLs oder 
+        als absolute lokale Pfade angegeben werden können. Sie wird verwendet, um sicherzustellen, 
+        dass nur zulässige Pfadformate akzeptiert werden.
 
         Ablauf:
-        - Analysiert den Pfad und prüft, ob es sich um eine WebDAV-URL (HTTP/HTTPS) handelt.
-        - Überprüft, ob der Pfad ein absoluter lokaler Dateipfad ist.
-        - Gibt `True` zurück, wenn einer der beiden Fälle zutrifft, andernfalls `False`.
+        -------
+        1. Zerlegt den angegebenen Pfad in seine Bestandteile (Parsing).
+        2. Überprüft, ob das Schema des Pfads entweder "http" oder "https" ist (WebDAV/HTTP(S)-URL).
+        3. Falls der Pfad keine URL ist, validiert er, ob es sich um einen absoluten lokalen Dateipfad handelt.
+        4. Gibt `True` zurück, wenn einer der beiden Bedingungen erfüllt ist. 
+           Andernfalls wird `False` zurückgegeben und der Pfad als ungültig eingestuft.
+
+        Besonderheiten:
+        ---------------
+        - URLs werden durch die Prüfung des Schemas (`http`, `https`) validiert.
+        - Lokale Pfade müssen absolut sein, um als gültig zu gelten.
+        - Unterstützt keine relativen Pfade oder andere URL-Typen wie FTP oder File-URLs.
 
         Parameter:
-        - pfad (str): Der zu prüfende Pfad oder die URL.
+        ----------
+        pfad (str): Der Pfad oder die URL, die geprüft werden soll.
 
         Rückgabewert:
-        - bool: `True`, wenn der Pfad gültig ist (lokaler Pfad oder HTTP(S)-URL), andernfalls `False`.
+        -------------
+        bool: 
+        - `True`: Wenn der Pfad eine zulässige WebDAV/HTTP(S)-URL oder ein gültiger 
+          absoluter lokaler Pfad ist.
+        - `False`: Wenn der Pfad weder eine gültige URL noch ein gültiger lokaler Pfad ist.
+
+        Beispiel:
+        ---------
+        - `ist_zulaessiger_pfad("https://example.com")` → `True`
+        - `ist_zulaessiger_pfad("C:/Users/User/Documents")` → `True`
+        - `ist_zulaessiger_pfad("invalid/path")` → `False`
         """
-        # Prüfe, ob es sich um eine WebDAV/HTTP(S)-URL handelt
-        parsed = urlparse(pfad)  # Parse den Pfad in seine Bestandteile
-        if parsed.scheme in ("http", "https"):  # Schema für HTTP oder HTTPS prüfen
-            return True  # Gültige WebDAV/HTTP(S)-URL gefunden
+        # Zerlege den angegebenen Pfad in seine Bestandteile (Parsing)
+        parsed = urlparse(pfad)  # Analysiert die Struktur des Pfads in Komponenten
 
-        # Prüfe, ob es ein gültiger absoluter lokaler Pfad ist
-        if os.path.isabs(pfad):  # Überprüfen, ob der Pfad absolut ist
-            return True  # Gültiger absoluten lokaler Pfad erkannt
+        # Überprüfen, ob die Schema-Komponente eine gültige WebDAV/HTTP(S)-URL (http/https) darstellt
+        if parsed.scheme in ("http", "https"):  
+            # Gültige HTTP(S)-URL erkannt
+            return True  
 
-        # Rückgabe `False` für alle anderen ungültigen Formate
+        # Überprüfen, ob der Pfad ein absoluter lokaler Pfad ist
+        if os.path.isabs(pfad):  
+            # Absoluter Pfad ist gültig
+            return True  
+
+        # Weder eine gültige URL noch ein absoluter lokaler Pfad → Rückgabe `False`
         return False
+
 
     def normalisiere_pfad(self, pfad):
         """
@@ -462,64 +625,113 @@ class ExportzielManager:
 
 def connect_gui_signals_exportziel_manager(gui):
     """
-    Verbindet die relevanten GUI-Signale mit der Logik für den Exportziel-Manager 
-    und stellt sicher, dass Pfadangaben korrekt verarbeitet werden.
+    Verbindet die relevanten GUI-Signale mit der Logik des Exportziel-Managers, 
+    um Interaktionen zwischen der Benutzeroberfläche und dem Exportziel-Manager zu ermöglichen.
+
+    Zweck:
+    ------
+    Diese Methode erstellt eine Instanz des `ExportzielManager`, verbindet die notwendigen 
+    Signale der GUI mit den dazugehörigen Funktionen im Exportziel-Manager und stellt sicher, 
+    dass die Instanz später in der GUI genutzt werden kann.
 
     Ablauf:
-    - Erstellt eine Instanz des `ExportzielManager` basierend auf der übergebenen GUI-Komponente `gui`.
-    - Ruft die Methode `connectSignals` auf, um die Signals-Logik des `ExportzielManager` mit der GUI zu verbinden.
-    - Führt eine Beispiel-Pfadnormalisierung durch und prüft, ob die Normalisierung erfolgreich ist.
-      * Bei einem Fehler wird dieser protokolliert und die Methode gibt `False` zurück.
-    - Gibt `True` zurück, wenn der Vorgang erfolgreich war.
+    -------
+    1. Initialisiert eine `ExportzielManager`-Instanz mit der übergebenen GUI-Komponente `gui`.
+    2. Ruft die Methode `connectSignals` des `ExportzielManager` auf, um relevante GUI-Signale 
+       mit Funktionen des Managers zu verknüpfen.
+    3. Weist die `ExportzielManager`-Instanz der GUI-Instanz (`gui.exportziel_manager`) zu, 
+       damit diese in anderen Bereichen der GUI verfügbar ist.
+    4. Gibt die Instanz des `ExportzielManager` zurück, falls sie für weitere Zwecke benötigt wird.
+
+    Besonderheiten:
+    ---------------
+    - Diese Methode ist der zentrale Punkt für die Initialisierung und Signalverbindung des Exportziel-Managers.
+    - Die Rückgabe des `ExportzielManager` ermöglicht eine flexible Weiterverarbeitung, falls nötig.
+    - Setzt voraus, dass die GUI bereits korrekt initialisiert ist und die relevanten Widgets (z. B. ComboBox) vorhanden sind.
 
     Parameter:
-    - gui: Die Haupt-GUI-Komponente, mit der die Logik des Exportziel-Managers interagiert.
+    ----------
+    gui: Die Hauptkomponente der GUI (z. B. Hauptfenster oder ein Widget), die mit dem Exportziel-Manager 
+         interagiert.
 
     Rückgabewert:
-    - bool: `True`, wenn die Signale verbunden und die Pfad-Verarbeitung erfolgreich war, andernfalls `False`.
+    -------------
+    ExportzielManager: Die neu erstellte und verbundene Instanz des Exportziel-Managers.
+
+    Beispiel:
+    ---------
+    ```
+    # Verbindet die GUI-Signale mit dem Exportziel-Manager
+    exportziel_manager = connect_gui_signals_exportziel_manager(window)
+
+    # Prüfen, ob die Instanz erfolgreich erstellt wurde
+    if exportziel_manager:
+        print("Exportziel-Manager erfolgreich konfiguriert.")
+    ```
     """
     # Instanz des ExportzielManagers erstellen und Signale verbinden
-    exportziel_manager = ExportzielManager(gui)  # Erstelle eine `ExportzielManager`-Instanz
-    exportziel_manager.connectSignals()  # Verbindet alle relevanten Signale mit Slots
+    exportziel_manager = ExportzielManager(gui)  # Erstellt eine neue Instanz des `ExportzielManager`
+    exportziel_manager.connectSignals()  # Verknüpft relevante Signale aus der GUI mit den zugehörigen Slots
 
-    # # Beispielhafter Schritt: Pfadnormalisierung für einen Pfad durchführen
-    # try:
-    #     normalisierter_pfad = os.path.normpath(pfad)  # Normalisieren eines Beispielpfads
-    # except Exception as e:
-    #     app_logger.debug(f"Fehler bei der Normalisierung des Pfads: {e}")  # Fehler protokollieren
-    #     return False  # Vorgang als fehlgeschlagen beenden
-    #
-    # # Erfolgreiche Verarbeitung und Signalverbindung
-    # return True
-
-    # Zuordnung der Instanz für spätere Nutzung in der GUI
+    # Speichert die `ExportzielManager`-Instanz in der GUI-Instanz, damit sie wiederverwendet werden kann
     gui.exportziel_manager = exportziel_manager
 
-    # Rückgabe der Instanz, falls sie benötigt wird
+    # Gibt die Instanz des ExportzielManagers zurück, falls sie später benötigt wird
     return exportziel_manager
 
 
 def get_exportziel_manager(gui=None):
     """
     Gibt die Singleton-Instanz des `ExportzielManager` zurück.
-    Wenn die Instanz nicht vorhanden ist, wird sie mit der `gui`-Referenz erstellt.
+    Wenn die Instanz noch nicht existiert, wird sie mit der übergebenen `gui`-Referenz neu erstellt.
 
-    :param gui: Referenz auf die GUI, notwendig für die Initialisierung.
-    :return: Singleton-Instanz des `ExportzielManager`.
-    """
-    global exportziel_manager_instance, is_initializing
+    Zweck:
+    ------
+    Diese Funktion stellt sicher, dass der `ExportzielManager` als Singleton fungiert, indem 
+    immer die gleiche Instanz zurückgegeben wird. Falls die Instanz noch nicht erstellt wurde, 
+    wird sie mit der GUI-Referenz initialisiert.
 
-    if exportziel_manager_instance is None:
-        if is_initializing:
-            raise RuntimeError("Kreisabhängigkeit beim Erstellen von ExportzielManager erkannt.")
+    Ablauf:
+    -------
+    1. Prüft, ob die Singleton-Inst
+    2. Ruft die Methode `connectSignals` des `ExportzielManager` auf, um relevante GUI-Signale
+          mit Funktionen des Managers zu verknüpfen.
+       3. Weist die `ExportzielManager`-Instanz der GUI-Instanz (`gui.exportziel_manager`) zu,
+          damit diese in anderen Bereichen der GUI verfügbar ist.
+       4. Gibt die Instanz des `ExportzielManager` zurück, falls sie für weitere Zwecke benötigt wird.
 
-        if gui is None:
-            raise ValueError("GUI-Referenz muss angegeben werden, um ExportzielManager zu initialisieren.")
+       Besonderheiten:
+       ---------------
+       - Diese Methode ist der zentrale Punkt für die Initialisierung und Signalverbindung des Exportziel-Managers.
+       - Die Rückgabe des `ExportzielManager` ermöglicht eine flexible Weiterverarbeitung, falls nötig.
+       - Setzt voraus, dass die GUI bereits korrekt initialisiert ist und die relevanten Widgets (z. B. ComboBox) vorhanden sind.
 
-        try:
-            is_initializing = True  # Markiert, dass die Instanz gerade erstellt wird
-            exportziel_manager_instance = ExportzielManager(gui)  # Erstellt die Instanz
-        finally:
-            is_initializing = False  # Zurücksetzen nach der Initialisierung
+       Parameter:
+       ----------
+       gui: Die Hauptkomponente der GUI (z. B. Hauptfenster oder ein Widget), die mit dem Exportziel-Manager
+            interagiert.
 
-    return exportziel_manager_instance
+       Rückgabewert:
+       -------------
+       ExportzielManager: Die neu erstellte und verbundene Instanz des Exportziel-Managers.
+
+       Beispiel:
+       ---------
+       ```
+       # Verbindet die GUI-Signale mit dem Exportziel-Manager
+       exportziel_manager = connect_gui_signals_exportziel_manager(window)
+
+       # Prüfen, ob die Instanz erfolgreich erstellt wurde
+       if exportziel_manager:
+           print("Exportziel-Manager erfolgreich konfiguriert.")
+       ```
+       """
+    # Instanz des ExportzielManagers erstellen und Signale verbinden
+    exportziel_manager = ExportzielManager(gui)  # Erstellt eine neue Instanz des `ExportzielManager`
+    exportziel_manager.connectSignals()  # Verknüpft relevante Signale aus der GUI mit den zugehörigen Slots
+
+    # Speichert die `ExportzielManager`-Instanz in der GUI-Instanz, damit sie wiederverwendet werden kann
+    gui.exportziel_manager = exportziel_manager
+
+    # Gibt die Instanz des ExportzielManagers zurück, falls sie später benötigt wird
+    return exportziel_manager
