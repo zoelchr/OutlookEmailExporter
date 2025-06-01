@@ -1,28 +1,67 @@
 """
 gui_controller.py
 
-Dieses Modul verknüpft die grafischen Bedienelemente (Buttons, ComboBox etc.) mit
-der dahinterliegenden Logik und den Outlook-Funktionen. Es kapselt Interaktionslogik wie:
+Dieses Modul verbindet die grafischen Bedienelemente (z. B. Buttons, ComboBoxen, Tabellen) mit der zugrunde liegenden
+Logik der Anwendung. Ziel ist es, eine klare Trennung zwischen der Benutzeroberfläche und der Geschäftslogik zu erreichen.
 
-- Exit-Button und Menübindung
-- zeitverzögertes Laden der Postfächer (Outlook)
-- Laden und Anzeigen der Ordnerstruktur eines Postfachs
-- Platzhalter-Handling in den ComboBoxen
-- Benutzerhinweise bei Outlook-Problemen (QMessageBox)
+### Hauptaufgaben:
+1. **Signal-Slot-Mechanismus**:
+   - Verknüpft GUI-Elemente mit Funktionen, die auf Benutzereingaben reagieren (z. B. Klick auf Buttons, Auswahl in ComboBoxen).
 
-### Zentrale Rolle des Parameters `gui`:
-Der Parameter `gui` spielt eine entscheidende Rolle in allen hier definierten Funktionen. Er stellt die Schnittstelle zu den GUI-Elementen (z. B. Buttons, ComboBoxes, Tabellenansichten) dar und ermöglicht die Verknüpfung dieser Elemente mit der dahinterliegenden Logik. 
-`gui` enthält unter anderem:
-- Referenzen auf GUI-Komponenten wie `button_exit`, `combo_postfach` oder `table_view`.
-- Signal-Slot-Verbindungen, die Benutzeraktionen (z. B. Klicks oder Auswahländerungen) mit den passenden Funktionen verbinden.
+2. **GUI-Interaktionen**:
+   - Behandelt Benachrichtigungen des Benutzers (z. B. bei Fehlern oder ausstehenden Aufgaben).
+   - Aktualisiert GUI-Elemente wie Tabellen, Auswahlfelder und Statusleisten basierend auf Benutzeraktionen.
 
-### Definition und Instanziierung:
-Die Klasse `gui` wird typischerweise als Teil der GUI-Initialisierung definiert. Der Ursprung dieser Klasse liegt in einer externen Instanz, die aus einer separaten Datei stammt. 
-In diesem Fall:
-- Die `gui`-Instanz wird im übergeordneten Modul `outlook_email_exporter.py` erzeugt und in das `gui_controller.py`-Modul übergeben.
+3. **Exportmanagement**:
+   - Koordiniert die Interaktion zwischen der GUI und dem Exportziel-Manager.
+   - Validiert Benutzereingaben und Aktualisierungen in Exportziel-ComboBoxen.
 
-### Aufruf:
-Das Modul `gui_controller.py` wird direkt nach der GUI-Initialisierung aus `outlook_email_exporter.py` aufgerufen.
+4. **Outlook-Integration**:
+   - Initialisiert Postfächer und lädt Ordnerstrukturen asynchron, um Benutzerinteraktionen nicht zu blockieren.
+   - Zeigt informative Hinweise bei Outlook-Fehlern.
+
+### Wichtiger Parameter:
+- **`gui`**:
+  Diese Instanz von `MyMainWindow` stellt die Verbindung zu den GUI-Komponenten dar.
+  Beispiele:
+  - `combo_postfach` (Postfachauswahl), `table_view` (E-Mail-Tabelle), `button_exit` (Beenden-Button)
+  - Kombiniert Signal-Slot-Verbindungen mit den zugehörigen Logikfunktionen.
+
+### Übersicht: Methoden
+1. **`connect_gui_signals`**
+   Verbindet alle relevanten GUI-Signale (z. B. Button-Klicks, ComboBox-Änderungen) mit den zugehörigen Slots (Funktionen).
+
+2. **`load_postfaecher_async`**
+   Lädt die Liste der Postfächer asynchron, um die GUI nicht zu blockieren. Zeigt währenddessen ggf. einen Ladeprozess an.
+
+3. **`on_postfach_changed`**
+   Wird ausgelöst, wenn der Benutzer die Auswahl eines Postfachs in der jeweiligen ComboBox ändert. Aktualisiert relevante Daten basierend auf der Auswahl.
+
+4. **`on_verzeichnis_changed`**
+   Reagiert auf Änderungen im Exportziel-Verzeichnis und validiert die Eingabe (z. B. ob der Pfad existiert oder erlaubt ist).
+
+5. **`on_export_clicked`**
+   Führt den Exportvorgang aus, wenn der Benutzer auf den Export-Button klickt. Überprüft vorher alle Eingaben und startet den Prozess.
+
+6. **`update_export_buttons_state`**
+   Aktiviert oder deaktiviert die Export-Buttons basierend auf dem Zustand der Benutzereingaben (z. B. ob ein gültiges Verzeichnis ausgewählt wurde).
+
+7. **`is_valid_export_selection`**
+   Validiert, ob die aktuelle Auswahl des Benutzers im Exportdialog gültig ist (z. B. kein Platzhaltertext oder ungültiger Pfad).
+
+8. **`show_loading_dialog`**
+   Zeigt ein modales Lade-Dialogfenster mit einer Nachricht an, um Benutzer über laufende Prozesse zu informieren.
+
+9. **`on_exit_clicked`**
+   Behandlung der Aktion beim Klicken auf den "Beenden"-Button. Beendet die Anwendung über eine saubere Abwicklung.
+
+### Initialisierung und Aufruf:
+- Wird in der `main.py` durch die Funktion `connect_gui_signals` nach der GUI-Initialisierung aufgerufen.
+- Bindet spezifische Logikfunktionen an die benutzerdefinierte Instanz von `MyMainWindow`.
+
+### Erweiterbarkeit:
+Das Modul kann leicht für neue GUI-Funktionen erweitert werden, indem neue Widgets oder Logiken ergänzt
+und mit den entsprechenden Methoden in `gui_controller.py` verknüpft werden.
 """
 import logging
 from PySide6.QtWidgets import QApplication, QMessageBox, QHeaderView, QAbstractItemView, QDialog, QLabel, QVBoxLayout
@@ -31,112 +70,97 @@ from PySide6.QtCore import QTimer, Qt
 from outlook_connector import get_outlook_postfaecher, get_outlook_ordner, lade_emails
 from email_table_model import EmailTableModel
 from exportziel_manager import connect_gui_signals_exportziel_manager, get_exportziel_manager
-
 from export_manager import ExportManager
 
-
+# Erstellen eines Loggers für Protokollierung von Ereignissen und Fehlern
 app_logger = logging.getLogger(__name__)
 
+# Platzhaltertexte für die ComboBoxen
 placeholder_text_postfach = "Bitte Postfach auswählen..."
 placeholder_text_verzeichnis = "Bitte Verzeichnis auswählen..."
 
 
 def connect_gui_signals(gui):
-    """Verbindet GUI-Elemente mit den zugehörigen Funktionen und initialisiert Inhalte.
+    """
+    Verbindet die GUI-Elemente mit zugehörigen Aktionen und Logik.
+
+    - Verknüpft Buttons mit Funktionen (z. B. Exit-Button).
+    - Initialisiert ComboBoxen und knüpft sie an asynchrone Datenverarbeitung.
+    - Stellt sicher, dass Elemente erst aktiviert werden, wenn die benötigten Daten verfügbar sind.
+
+    Argumente:
+    ----------
+    gui : object
+        Die Haupt-GUI-Instanz mit Referenzen auf die Bedienelemente.
 
     Hinweis:
-    Die Aktivierung der combo_postfach erfolgt hier nicht, sondern erst in der Funktion `load_postfaecher_async`.
+    Die Aktivierung der ComboBoxen (`combo_postfach`, `combo_verzeichnis`) erfolgt dynamisch nach dem Laden der Daten
+    in der Funktion `load_postfaecher_async`.
     Dies liegt daran, dass die Aktivierung der combo_postfach davon abhängig ist, dass eine erfolgreiche Verbindung
     zu Outlook hergestellt wurde. Dieses Vorgehen verhindert, dass die GUI-Elemente irrtümlich aktiviert werden,
     ohne dass entsprechende Daten zur Verfügung stehen.
     """
-    app_logger.debug("Verbinde GUI-Signale mit Logikfunktionen...")
+    app_logger.debug("Verknüpfe GUI-Signale mit Logikfunktionen...")
 
-
-    # Exit-Button
-    if gui.button_exit:
-        try:
+    try:
+        # Exit-Button und Menüeintrag verbinden
+        if gui.button_exit:
             gui.button_exit.clicked.connect(on_exit_clicked)
             app_logger.debug("Exit-Button verbunden.")
-        except Exception as e:
-            app_logger.error(f"Fehler beim Verbinden des Exit-Buttons: {e}")
-
-    # Menüeintrag "Exit"
-    if gui.action_exit:
-        try:
+        if gui.action_exit:
             gui.action_exit.triggered.connect(on_exit_clicked)
-            app_logger.debug("Exit-Menüeintrag verbunden.")
-        except Exception as e:
-            app_logger.error(f"Fehler beim Verbinden des Exit-Menüeintrag: {e}")
+            app_logger.debug("Menü 'Exit' verbunden.")
 
-    # Verzeichnis-ComboBox zunächst deaktivieren, da erst ein Postfach ausgewählt werden muss
-    if gui.combo_verzeichnis:
-        gui.combo_verzeichnis.setEnabled(False)
+        # Initial deaktiviertes Verzeichnis-Dropdown (wird später aktiviert)
+        if gui.combo_verzeichnis:
+            gui.combo_verzeichnis.setEnabled(False)
 
-    # Outlook-Postfächer asynchron laden (verhindert GUI-Blockade)
-    # Hinweis: Die Aktivierung der combo_postfach erfolgt bewusst nicht in connect_gui_signals,
-    # sondern erst in load_postfaecher_async, da sie von einer erfolgreichen Outlook-Verbindung abhängt.
-    QTimer.singleShot(200, lambda: load_postfaecher_async(gui))
-    app_logger.debug("Outlook-Ladevorgang geplant (200ms Verzögerung)")
+        # Asynchrones Laden der Outlook-Postfächer nach kleiner Verzögerung
+        QTimer.singleShot(200, lambda: load_postfaecher_async(gui))
+        app_logger.debug("Outlook-Ladevorgang geplant (200ms Verzögerung).")
 
-    # In der GUI-Initialisierung
-    connect_gui_signals_exportziel_manager(gui)
-    app_logger.debug(f"Combox exportziel: {gui.combo_exportziel} mit Logik verbunden.")
+        # Verbindung für Exportziel-Management herstellen
+        connect_gui_signals_exportziel_manager(gui)
+        app_logger.debug(f"Exportziel-ComboBox verbunden: {gui.combo_exportziel}.")
 
-    # Export-Buttons initial deaktivieren
-    update_export_buttons_state(gui)
+        # Initialzustand der Export-Buttons setzen
+        update_export_buttons_state(gui)
 
-
-   # MSG-Export-Button
-    if gui.button_export_msg:
-        try:
-            gui.button_export_msg.clicked.connect(lambda: on_export_msg_clicked(gui))
+        # Verknüpfung der Export-Buttons mit den entsprechenden Aktionen
+        if gui.button_export_msg:
+            gui.button_export_msg.clicked.connect(lambda: on_export_clicked(gui, "msg"))
             app_logger.debug("MSG-Export-Button verbunden.")
-        except Exception as e:
-            app_logger.error(f"Fehler beim Verbinden des MSG-Export-Buttons: {e}")
-
-
-    # PDF-Export-Button
-    if gui.button_export_pdf:
-        try:
-            gui.button_export_pdf.clicked.connect(lambda: on_export_pdf_clicked(gui))
+        if gui.button_export_pdf:
+            gui.button_export_pdf.clicked.connect(lambda: on_export_clicked(gui, "pdf"))
             app_logger.debug("PDF-Export-Button verbunden.")
-        except Exception as e:
-            app_logger.error(f"Fehler beim Verbinden des PDF-Export-Buttons: {e}")
-
-
-    # Kombi-Export-Button (MSG + PDF)
-    if gui.button_export_both:
-        try:
-            gui.button_export_both.clicked.connect(lambda: on_export_both_clicked(gui))
+        if gui.button_export_both:
+            gui.button_export_both.clicked.connect(lambda: on_export_clicked(gui, "both"))
             app_logger.debug("Kombi-Export-Button verbunden.")
-        except Exception as e:
-            app_logger.error(f"Fehler beim Verbinden des Kombi-Export-Buttons: {e}")
+
+    except Exception as e:
+        app_logger.error(f"Fehler beim Verbinden der GUI-Signale: {str(e)}")
 
 
 def load_postfaecher_async(gui):
     """
-    Lädt die verfügbaren Outlook-Postfächer und initialisiert die zugehörige Auswahl-ComboBox in der GUI.
-
-    Hinweis:
-    Die Aktivierung der combo_postfach erfolgt bewusst nicht in der Funktion `connect_gui_signals`, 
-    sondern erst hier in `load_postfaecher_async`. Hintergrund ist, dass die Aktivierung der combo_postfach 
-    davon abhängt, dass eine Verbindung zu Outlook erfolgreich hergestellt werden kann. 
-    Ohne eine valide Verbindung bleiben die GUI-Interaktionen mit der ComboBox deaktiviert, 
-    um Fehlerszenarien oder ungültige Benutzeraktionen zu vermeiden.
-
-    Parameter:
-    gui : QObject
-        Die GUI-Instanz, welche die ComboBox enthält, die mit den Postfächern gefüllt wird.
+    Lädt asynchron die Liste der verfügbaren Outlook-Postfächer und initialisiert
+    die entsprechende Auswahl-ComboBox in der GUI.
 
     Ablauf:
-    1. Versucht, asynchron die Liste der verfügbaren Outlook-Postfächer zu laden.
-    2. Falls erfolgreich:
-        - Füllt die combo_postfach mit den Postfachnamen.
-        - Aktiviert die combo_postfach.
-        - Verbindet die Auswahländerungen (Signal-Slot-Verknüpfung).
-    3. Bei Fehlermeldungen oder Ausnahmen:
-        - Zeigt eine entsprechende Warnung an und deaktiviert die relevanten GUI-Aktionen.
+    -------
+    1. Startet den Zugriff auf die Outlook-Daten, um Postfächer abzurufen.
+    2. Befüllt die GUI-ComboBox für Postfächer mit den abgerufenen Daten.
+    3. Aktiviert die ComboBox und verbindet deren Signal mit der entsprechenden Logik.
+    4. Zeigt Fehlermeldungen in der GUI an, falls keine Verbindung möglich ist.
+
+    Argumente:
+    ----------
+    gui : object
+        Die GUI-Instanz, die das ComboBox-Element für die Postfächer enthält.
+
+    Hinweis:
+    Die Aktivierung der ComboBox für Postfächer erfolgt ausschließlich nach dem erfolgreichen
+    Laden der Daten, um Fehlbedienungen zu vermeiden.
     """
     try:
         # Starte den Zugriff auf Outlook und lade die Liste der Postfächer.
@@ -195,7 +219,24 @@ def load_postfaecher_async(gui):
 
 
 def on_postfach_changed(gui, index):
-    """Wird aufgerufen, wenn ein Postfach ausgewählt wurde, d.h. index > 0."""
+    """
+    Wird ausgelöst, wenn der Benutzer ein gültiges Postfach in der entsprechenden
+    ComboBox auswählt (Index > 0).
+
+    Funktion:
+    ---------
+    - Entfernt einen eventuell vorhandenen Platzhalter-Eintrag aus der ComboBox.
+    - Lädt und verarbeitet die Ordnerstruktur des gewählten Postfachs.
+    - Aktualisiert die Tabellenansicht und initialisiert die zugehörigen GUI-Elemente.
+    - Aktiviert relevante GUI-Komponenten und aktualisiert die Export-Buttons.
+
+    Parameter:
+    ----------
+    gui : object
+        Die GUI-Instanz, die auf die entsprechenden Bedienelemente zugreifen kann.
+    index : int
+        Der Index des ausgewählten Postfachs in der ComboBox.
+    """
 
     # Aktualisiere den Zustand der Export-Buttons
     update_export_buttons_state(gui)
@@ -287,7 +328,24 @@ def on_postfach_changed(gui, index):
 
 
 def on_verzeichnis_changed(gui, index):
-    """Reaktion auf Verzeichniswahl: Checkbox-Platzhalter entfernen + Tabelle befüllen."""
+    """
+    Wird ausgelöst, wenn der Benutzer ein gültiges Verzeichnis in der entsprechenden
+    ComboBox auswählt (Index > 0).
+
+    Funktion:
+    ---------
+    - Entfernt einen eventuell vorhandenen Platzhalter-Eintrag aus der ComboBox.
+    - Lädt die E-Mails des ausgewählten Verzeichnisses und befüllt die Tabellenansicht.
+    - Passt die Spaltenbreiten und Sortierungsoptionen in der Tabellenansicht an.
+    - Aktiviert relevante GUI-Komponenten und aktualisiert den Zustand der Export-Buttons.
+
+    Parameter:
+    ----------
+    gui : object
+        Die GUI-Instanz, die auf die entsprechenden Bedienelemente zugreifen kann.
+    index : int
+        Der Index des ausgewählten Verzeichnisses in der ComboBox.
+    """
 
     # Aktualisiere den Zustand der Export-Buttons
     update_export_buttons_state(gui)
@@ -370,14 +428,13 @@ def on_verzeichnis_changed(gui, index):
         # Export-Buttons initial deaktivieren
         update_export_buttons_state(gui)
 
-    # Aktualisiere den Zustand der Export-Buttons
-    update_export_buttons_state(gui)
 
-
-def on_export_msg_clicked(gui):
+def on_export_clicked(gui, export_type):
     """
-    Verarbeitet das Klicken auf den 'Export MSG'-Button und startet den Export
-    der ausgewählten Emails als MSG-Dateien.
+    Verarbeitet das Klicken auf einen der drei Export-Buttons und startet den Export
+    der ausgewählten Emails in den gewünschten Formaten.
+    Zusätzlich wird der Status der GUI-Checkboxen übergeben und kann in der
+    Export-Logik verwendet werden.
 
     Ablauf:
     -------
@@ -392,13 +449,22 @@ def on_export_msg_clicked(gui):
     gui : object
         Die GUI-Instanz, die Verweise auf relevante Elemente wie die Tabellenansicht
         und das Exportziel enthält.
+    export_type : str
+        Der Typ des Exports: "msg", "pdf" oder "both" (beide Formate).
 
     Hinweis:
+    Der Status der Checkboxen wird zuverlässig aus der GUI gelesen und an den
+    Exportprozess übergeben.
     Bei Fehlern oder ungültigen Zuständen, wie z. B. einem leeren Datenmodell
     oder keinem definierten Exportverzeichnis, wird der Ablauf abgebrochen und
     der Benutzer entsprechend informiert.
     """
-    app_logger.debug("'Export MSG'-Button wurde geklickt.")
+    app_logger.debug(f"Export ausgelöst: Typ={export_type}")
+
+    # 0. Status der Checkboxen abrufen
+    checkbox_change_filename = gui.checkbox_change_filename.isChecked()
+    checkbox_change_filedate = gui.checkbox_change_filedate.isChecked()
+    checkbox_overwrite_file = gui.checkbox_overwrite_file.isChecked()
 
     # 1. Prüfen, ob ein Tabellenmodell vorhanden ist
     table_model = gui.table_view.model()
@@ -418,65 +484,32 @@ def on_export_msg_clicked(gui):
         # 3. ExportManager-Instanz erstellen
         email_exporter = ExportManager(table_model, export_directory)
 
-        # 4. Export durchführen
-        email_exporter.export_emails()
+        # 4. Export basierend auf dem ausgewählten Typ ausführen
+        if export_type == "msg":
+            #email_exporter.export_emails_as_msg(checkbox_status_1, checkbox_status_2)
+            email_exporter.export_emails()
+            QMessageBox.information(gui, "Export erfolgreich", "MSG-Export erfolgreich abgeschlossen!")
+            app_logger.debug("MSG-Export erfolgreich.")
 
-        # 5. Erfolgsrückmeldung an den Benutzer
-        QMessageBox.information(gui, "Export erfolgreich", "MSG-Export erfolgreich abgeschlossen!")
-        app_logger.debug("MSG-Export erfolgreich durchgeführt.")
+        elif export_type == "pdf":
+            #email_exporter.export_emails_as_pdf(checkbox_status_1, checkbox_status_2)
+            QMessageBox.information(gui, "Export erfolgreich", "PDF-Export erfolgreich abgeschlossen!")
+            app_logger.debug("PDF-Export erfolgreich.")
+
+        elif export_type == "both":
+            #email_exporter.export_emails_as_msg(checkbox_status_1, checkbox_status_2)
+            #email_exporter.export_emails_as_pdf(checkbox_status_1, checkbox_status_2)
+            QMessageBox.information(gui, "Export erfolgreich", "Kombi-Export erfolgreich abgeschlossen!")
+            app_logger.debug("Kombi-Export (MSG + PDF) erfolgreich.")
+
+        else:
+            QMessageBox.warning(gui, "Ungültiger Exporttyp", f"Der Exporttyp '{export_type}' ist nicht bekannt.")
+            app_logger.error(f"Export abgebrochen: Unbekannter Exporttyp '{export_type}'.")
 
     except Exception as e:
         # Fehlerprotokollierung und Benutzerhinweis
-        app_logger.error(f"Fehler beim MSG-Export: {e}")
+        app_logger.error(f"Fehler beim Export ({export_type}): {e}")
         QMessageBox.critical(gui, "Export fehlgeschlagen", f"Ein Fehler ist aufgetreten: {e}")
-
-
-def on_export_pdf_clicked(gui):
-    """Aktion ausführen, wenn der PDF-Export-Button geklickt wird."""
-    app_logger.debug("PDF-Export-Button wurde geklickt.")
-
-    # try:
-    #     # Tabellenmodell abrufen
-    #     table_model = gui.table_view.model()
-    #     if not table_model:
-    #         app_logger.warning("Kein Tabellenmodell gefunden. Der Export wird abgebrochen.")
-    #         QMessageBox.warning(gui, "Export fehlgeschlagen", "Keine Daten in der Tabelle verfügbar!")
-    #         return
-    #
-    #     # Ausgewählte E-Mails basierend auf Checkboxen abrufen
-    #     selected_emails = table_model.get_selected_emails()
-    #
-    #     if not selected_emails:
-    #         app_logger.warning("Keine Zeilen ausgewählt. Der Export wird abgebrochen.")
-    #         QMessageBox.warning(gui, "Keine Auswahl", "Bitte wählen Sie mindestens eine Zeile zur Verarbeitung aus!")
-    #         return
-    #
-    #     # ExportManager initialisieren
-    #     export_manager = ExportManager()
-    #     export_manager.set_export_path(gui.current_export_path)  # Exportpfad setzen
-    #
-    #     # Exportieren der ausgewählten E-Mails
-    #     for email in selected_emails:
-    #         export_manager.save_as_pdf(email)
-    #
-    #     QMessageBox.information(gui, "Export abgeschlossen", "Die ausgewählten E-Mails wurden erfolgreich als PDF exportiert.")
-    #     app_logger.debug(f"{len(selected_emails)} PDF-Dateien wurden erfolgreich gespeichert.")
-    # except Exception as e:
-    #     app_logger.error(f"Fehler beim Exportieren von PDFs: {e}")
-    #     QMessageBox.critical(gui, "Fehler", f"Ein Fehler ist bei der Verarbeitung aufgetreten: {str(e)}")
-
-
-def on_export_both_clicked(gui):
-    """Aktion ausführen, wenn der Kombi-Export-Button geklickt wird."""
-    app_logger.debug("Beide Exporte gestartet (MSG und PDF).")
-    # Export-Logik für beide Formate hier einfügen
-    QMessageBox.information(gui, "Export PDF + MSG", "Kombi-Export erfolgreich gestartet!")
-
-
-def on_exit_clicked():
-    """Beendet das Programm."""
-    app_logger.debug("Exit ausgelöst – Anwendung wird beendet")
-    QApplication.quit()
 
 
 def update_export_buttons_state(gui):
@@ -553,88 +586,89 @@ def is_valid_export_selection(gui) -> bool:
     """
     Überprüft, ob die aktuelle Auswahl in der ComboBox ein gültiges Exportziel darstellt.
 
-    :param gui: Die Instanz der GUI.
-    :return: True, wenn ein valides Exportziel ausgewählt wurde, sonst False.
+    Diese Funktion validiert die Benutzer-Auswahl in der Export-Ziel-ComboBox (z. B. für Dateispeicherorte).
+    Es wird überprüft, ob die Auswahl gültig ist, indem bestimmte ungültige Zustände wie Platzhaltertexte
+    oder leere Einträge ausgeschlossen werden.
+
+    Parameter:
+        gui (MyMainWindow): Die Instanz des Hauptfensters der GUI, das die ComboBox `combo_exportziel` enthält.
+
+    Rückgabewert:
+        bool: Gibt `True` zurück, wenn die aktuelle Auswahl in der ComboBox ein gültiges Exportziel ist.
+              Gibt `False` zurück, wenn die Auswahl ungültig ist (z. B. ein Platzhaltertext, keine Auswahl).
+
+    Ablauf:
+        1. Prüft, ob die Auswahl in der ComboBox innerhalb der gültigen Indizes liegt.
+        2. Validiert, ob der Text der Auswahl einer ungültigen Option zugeordnet ist (z. B. Platzhalter).
+
+    Hinweis:
+    Hier erfolgt noch keine Prüfung, ob das ausgewählte Exportziel auch tatsächlich existiert oder erreichbar ist.
     """
     combo_exportziel = gui.combo_exportziel
 
-    # Hole den aktuellen Index und die Anzahl der Elemente in der ComboBox
+    # Index und Anzahl der Einträge in der ComboBox abrufen
     current_index = combo_exportziel.currentIndex()
     total_items = combo_exportziel.count()
 
-    # Überprüfen, ob der Index ungültig ist
+    # Ungültigen Index überprüfen
     if current_index < 0 or current_index >= total_items:
         return False
 
-    # Hole den aktuell ausgewählten Text
+    # Text der aktuellen Auswahl abrufen
     selected_text = combo_exportziel.currentText()
 
-    # Hole die ungültigen Texte direkt aus dem Exportziel-Manager
-    exportziel_manager = get_exportziel_manager(gui)  # Die im ExportzielManager definierten Texte holen
+    # Ungültige Texte aus dem ExportzielManager abrufen
+    exportziel_manager = get_exportziel_manager(gui)  # Instanziiere den Exportzielmanager (als Singleton)
     invalid_entries = [exportziel_manager.placeholder_text, exportziel_manager.new_target_text]
 
-    # Prüfen, ob der Text ungültig ist
+    # Prüfen, ob die aktuelle Auswahl ungültig ist
     if selected_text in invalid_entries:
         return False
 
-    # Wenn alle Bedingungen erfüllt sind, ist die Auswahl valide
+    # Auswahl ist valide
     return True
 
 
 def show_loading_dialog(parent, message, duration=None):
     """
-    Erstellt ein Dialogfenster und zeigt eine Nachricht an.
+    Zeigt ein Lade-Dialogfenster mit einer Nachricht an.
 
-    :param parent: Das Hauptfenster der GUI (Parent für den Dialog).
-    :param message: Die Nachricht, die im Dialog angezeigt wird.
-    :param duration: (Optional) Zeit in Millisekunden, nach der das Dialogfenster automatisch geschlossen wird.
+    Dieser Dialog wird verwendet, um den Benutzer über einen Vorgang zu informieren, der eine Wartezeit erfordert,
+    wie z. B. den Export oder das Laden von Daten. Der Dialog ist modales Fenster und blockiert
+    alle interaktiven Aktionen mit dem Hauptfenster.
+
+    Parameter:
+        parent (QWidget): Das Hauptfenster oder Elternfenster der GUI, das dem Dialog als Parent dient.
+        message (str): Der Informationstext, der im Dialog angezeigt werden soll.
+        duration (int, optional): Zeit in Millisekunden, nach der der Dialog automatisch geschlossen wird.
+                                  Standard ist `None`, falls keiner angegeben ist.
+
+    Rückgabewert:
+        QDialog: Die Instanz des erstellten Dialogs.
     """
-    # Dialog erstellen
+    # Dialog initialisieren
     dialog = QDialog(parent)
-    dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)  # Entfernt die Titelzeile
-    dialog.setModal(True)  # Blockiert Benutzerinteraktionen mit dem Hauptfenster
+    dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)  # Entfernt die Fensterdekorationen
+    dialog.setModal(True)  # Blockiert Benutzerinteraktion im Hauptfenster
 
-    # Layout und Nachricht
-    layout = QVBoxLayout(dialog)
-    label = QLabel(message)
-    label.setAlignment(Qt.AlignCenter)
-    layout.addWidget(label)
+    # Layout und Label für die Nachricht erstellen
+    layout = QVBoxLayout(dialog)  # Verwendet ein vertikales Layout für das Dialogfenster
+    label = QLabel(message)  # Label mit der Nachricht initialisieren
+    label.setAlignment(Qt.AlignCenter)  # Zentriere den Text im Dialog
+    layout.addWidget(label)  # Füge das Label zum Layout hinzu
 
-    dialog.setLayout(layout)
-    dialog.resize(300, 100)  # Dialogfenstergröße definieren
-    dialog.show()
+    dialog.setLayout(layout)  # Setze das Layout für den Dialog
+    dialog.resize(300, 100)  # Setze die Größe des Dialogfensters
+    dialog.show()  # Zeige den Dialog an
 
-    # Automatisches Schließen nach einer Zeit, falls `duration` angegeben ist
+    # Falls eine Dauer angegeben ist, schließe den Dialog automatisch nach Ablauf dieser Zeit
     if duration:
         QTimer.singleShot(duration, dialog.accept)
 
     return dialog
 
 
-# def onExportTargetChanged(self, index):
-#     """
-#     Wird aufgerufen, wenn die Auswahl in der ComboBox für Exportziele geändert wird.
-#     """
-#     app_logger.debug(f"Signal onExportTargetChanged aktiviert. Index: {index}")
-#     target = self.combo_exportziel.currentText()
-#     app_logger.debug(f"Gewählter Eintrag: {target}")
-#
-#     # Wenn der ausgewählte Text der Platzhalter ist, keine Aktion ausführen
-#     if target == self.placeholder_text:
-#         app_logger.debug(f"Platzhaltertext ('{target}') ausgewählt, keine Änderung.")
-#         return
-#
-#     # Wenn ein neues Ziel ausgewählt werden sollte, Dialog öffnen
-#     if target == self.new_target_text:
-#         app_logger.debug(f"Option 'Neues Exportziel ('{target}') wählen...' ausgewählt.")
-#         self.handleNewTarget()
-#         return
-#
-#     # Ziel validieren
-#     if not self.ist_zulaessiger_pfad(target):
-#         app_logger.error(f"Ungültiger Pfad ausgewählt: {target}")
-#         return
-#
-#     app_logger.debug(f"Valider und ausgewählter Exportpfad: {target}")
-#     # Speicher das neue Ziel und update history
-#     self.saveExportTarget(target)
+def on_exit_clicked():
+    """Beendet das Programm."""
+    app_logger.debug("Exit ausgelöst – Anwendung wird beendet")
+    QApplication.quit()

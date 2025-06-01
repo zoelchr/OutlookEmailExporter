@@ -1,4 +1,4 @@
-D:/Temp
 D:/Dev/pycharm/OutlookEmailExporter/utils
+D:/Temp
 D:/Dev/pycharm/OutlookEmailExporter/logs
 D:/Dev/pycharm/OutlookEmailExporter/docs

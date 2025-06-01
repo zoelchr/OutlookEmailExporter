@@ -1,7 +1,76 @@
+"""
+email_table_model.py
+
+Dieses Modul implementiert ein Qt-Tabellenmodell zur Darstellung und Verwaltung von E-Mails in einer Tabelle.
+Die Tabelle enthält Informationen wie Empfangsdatum, Absender, Betreff und eine Checkbox, um E-Mails auszuwählen.
+
+### Hauptaufgaben:
+1. **Darstellung der E-Mails**:
+   - Verwendung der Klasse `Email`, die die einzelnen E-Mails repräsentiert.
+   - Jede Zeile der Tabelle entspricht einer E-Mail, und die Spalten enthalten Details wie:
+     - Empfangsdatum und Uhrzeit
+     - Name und E-Mail-Adresse des Absenders
+     - Betreff der Nachricht
+     - Checkbox zur Auswahl.
+
+2. **Interaktive Tabelle**:
+   - Unterstützung für Checkboxen, die es dem Benutzer ermöglichen, einzelne E-Mails für Aktionen (z. B. Export) zu markieren.
+   - Spaltenbeschriftungen und datenabhängige Zell-Inhalte werden dynamisch bereitgestellt.
+
+3. **Flexibilität und Reaktivität**:
+   - Änderungen an den Daten des Modells werden umgehend in der Tabelle aktualisiert.
+   - Unterstützt durch Rollen wie `Qt.CheckStateRole` (für Checkboxen) und `Qt.DisplayRole` (für anzuzeigende Daten).
+
+### Übersicht: Methoden
+1. **`__init__`**
+   Initialisiert das Modell mit einer Liste von `Email`-Objekten. Erstellt zusätzlich eine Liste zum Verfolgen des Zustands der Checkboxen.
+
+2. **`rowCount`**
+   Gibt die Anzahl der Zeilen im Modell zurück, entsprechend der Anzahl der E-Mails.
+
+3. **`columnCount`**
+   Gibt die Anzahl der Spalten im Modell zurück. Die Tabelle hat feste Spalten:
+   - 0: Checkbox
+   - 1: Empfangsdatum
+   - 2: Name des Absenders
+   - 3: E-Mail-Adresse des Absenders
+   - 4: Betreff.
+
+4. **`data`**
+   Stellt Daten für jede Zelle basierend auf der angeforderten Rolle bereit:
+   - `Qt.DisplayRole`: Liefert die anzuzeigenden Werte (z. B. Datum, Betreff).
+   - `Qt.CheckStateRole`: Liefert den Status der Checkbox (angekreuzt oder nicht).
+
+5. **`headerData`**
+   Definiert die Kopfzeilen der Tabelle. Bietet benutzerdefinierte Beschriftungen für die horizontalen Tabellenköpfe (z. B. "✓", "Betreff").
+
+6. **`flags`**
+   Legt fest, welche Aktionen für die Daten erlaubt sind (z. B. Checkbox anklicken, Daten kopieren).
+
+7. **`setData`**
+   Ermöglicht, Daten im Modell zu aktualisieren (z. B. die Checkboxen zu setzen oder zurückzusetzen).
+
+8. **`get_selected_emails`**
+   Gibt die vom Benutzer ausgewählten `Email`-Objekte zurück, die über die Checkboxen markiert wurden.
+
+9. **`reset_data`**
+   Lädt neue E-Mails in das Modell und initialisiert die Checkboxen-Liste neu.
+
+10. **`sort`**
+    Implementiert die Sortierung der E-Mails basierend auf einer bestimmten Spalte.
+
+### Flexibilität:
+- Kann leicht erweitert werden, z. B. um zusätzliche Spalten hinzuzufügen.
+- Unterstützt benutzerdefinierte Rollen, wenn zusätzliche Funktionalitäten benötigt werden.
+
+### Verknüpfung:
+Wird typischerweise in Verbindung mit einer `QTableView` verwendet, die das Modell rendert und Interaktionen abbildet.
+"""
 import logging
 from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QEvent
 from email_model import Email
 
+# Erstellen eines Loggers für Protokollierung von Ereignissen und Fehlern
 app_logger = logging.getLogger(__name__)
 
 class EmailTableModel(QAbstractTableModel):
@@ -43,7 +112,7 @@ class EmailTableModel(QAbstractTableModel):
         self.checked_rows = [False] * len(emails)
         app_logger.debug(f"EmailTableModel initialisiert mit {len(emails)} E-Mails.")
 
-    # def rowCount(self, parent=QModelIndex()):
+
     def rowCount(self, parent=None):
         """
         Bestimmt die Anzahl der Zeilen im Tabellenmodell.
@@ -60,7 +129,7 @@ class EmailTableModel(QAbstractTableModel):
         """
         return len(self.emails)
 
-    # def columnCount(self, parent=QModelIndex()):
+
     def columnCount(self, parent=None):
         """
         Gibt die Anzahl der Spalten zurück, die in der Tabelle angezeigt werden.
@@ -232,6 +301,7 @@ class EmailTableModel(QAbstractTableModel):
         if index.column() == 0: # Wenn die erste Spalte (Checkbox-Spalte) angefragt wird, gib Qt.ItemIsEnabled, Qt.ItemIsUserCheckable und Qt.ItemIsEditable zurück
             return Qt.ItemIsEnabled | Qt.ItemIsUserCheckable #| Qt.ItemIsEditable
         return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable
+
 
     #def setData(self, index, value, role=Qt.EditRole):
     def setData(self, index, value, role):

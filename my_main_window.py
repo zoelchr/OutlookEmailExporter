@@ -13,7 +13,7 @@ Diese Struktur ermöglicht eine flexible und modulare Erweiterung der GUI-Funkti
 """
 import os  # Ermöglicht den Zugriff auf das Dateisystem
 from PySide6.QtUiTools import QUiLoader  # Lädt zur Laufzeit UI-Designs aus .ui-Dateien
-from PySide6.QtWidgets import QMainWindow, QComboBox, QPushButton, QTableView, QDialog  # GUI-Komponenten
+from PySide6.QtWidgets import QMainWindow, QComboBox, QPushButton, QTableView, QDialog, QCheckBox  # GUI-Komponenten
 from PySide6.QtCore import QFile, QObject, Qt  # Nützliche Klassen und Konstanten für GUI-Funktionen
 
 import logging
@@ -82,6 +82,10 @@ class MyMainWindow(QMainWindow):
         self.table_view = bind_widget(QTableView, "tableView_Emails", level=DEBUG_LEVEL)
         # Menüleiste
         self.action_exit = bind_widget(QObject, "actionExit", level=DEBUG_LEVEL)
+        # Checkboxen
+        self.checkbox_change_filename = bind_widget(QCheckBox, "checkBox_Change_Filename", level=DEBUG_LEVEL)
+        self.checkbox_change_filedate= bind_widget(QCheckBox, "checkBox_Change_Filedate", level=DEBUG_LEVEL)
+        self.checkbox_overwrite_file = bind_widget(QCheckBox, "checkBox_Overwrite_File", level=DEBUG_LEVEL)
 
         # Debugging: Listet alle in der UI definierte Widgets und ihre Namen auf
         logger.debug("Gefundene QObjects:")
