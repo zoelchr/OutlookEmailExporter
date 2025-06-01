@@ -38,3 +38,6 @@ MAX_FOLDER_DEPTH = int(os.getenv("MAX_FOLDER_DEPTH", "1"))
 # Maximale Anzahl Einträge in der Exportziel-Combobox
 MAX_SAVED_EXPORT_TARGETS = int(os.getenv("MAX_SAVED_EXPORT_TARGETS", "20"))
 MAX_ENV_EXPORT_TARGETS = int(os.getenv("MAX_ENV_EXPORT_TARGETS", "5"))
+
+# Liste mit den bekannten Absendern
+KNOWNSENDER_FILE = os.getenv("KNOWNSENDER_FILE", "./known_senders_private.csv")

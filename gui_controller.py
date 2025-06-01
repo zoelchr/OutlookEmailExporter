@@ -462,9 +462,9 @@ def on_export_clicked(gui, export_type):
     app_logger.debug(f"Export ausgelöst: Typ={export_type}")
 
     # 0. Status der Checkboxen abrufen
-    checkbox_change_filename = gui.checkbox_change_filename.isChecked()
-    checkbox_change_filedate = gui.checkbox_change_filedate.isChecked()
-    checkbox_overwrite_file = gui.checkbox_overwrite_file.isChecked()
+    change_filename = gui.checkbox_change_filename.isChecked()
+    change_filedate = gui.checkbox_change_filedate.isChecked()
+    overwrite_file = gui.checkbox_overwrite_file.isChecked()
 
     # 1. Prüfen, ob ein Tabellenmodell vorhanden ist
     table_model = gui.table_view.model()
@@ -484,23 +484,16 @@ def on_export_clicked(gui, export_type):
         # 3. ExportManager-Instanz erstellen
         email_exporter = ExportManager(table_model, export_directory)
 
-        # 4. Export basierend auf dem ausgewählten Typ ausführen
-        if export_type == "msg":
-            #email_exporter.export_emails_as_msg(checkbox_status_1, checkbox_status_2)
-            email_exporter.export_emails()
-            QMessageBox.information(gui, "Export erfolgreich", "MSG-Export erfolgreich abgeschlossen!")
-            app_logger.debug("MSG-Export erfolgreich.")
+        # 4. Export initiieren
+        if export_type in ["msg", "pdf", "both"]:
+            exported_emails = email_exporter.export_emails(export_type, change_filename, change_filedate, overwrite_file)
 
-        elif export_type == "pdf":
-            #email_exporter.export_emails_as_pdf(checkbox_status_1, checkbox_status_2)
-            QMessageBox.information(gui, "Export erfolgreich", "PDF-Export erfolgreich abgeschlossen!")
-            app_logger.debug("PDF-Export erfolgreich.")
-
-        elif export_type == "both":
-            #email_exporter.export_emails_as_msg(checkbox_status_1, checkbox_status_2)
-            #email_exporter.export_emails_as_pdf(checkbox_status_1, checkbox_status_2)
-            QMessageBox.information(gui, "Export erfolgreich", "Kombi-Export erfolgreich abgeschlossen!")
-            app_logger.debug("Kombi-Export (MSG + PDF) erfolgreich.")
+            QMessageBox.information(gui, "Export erfolgreich", f"Anzahl exportierter Emails: {exported_emails} \nZielverzeichnis: {export_directory}")
+            app_logger.debug(
+                f"Export erfolgreich. "
+                f"Details: export_type={export_type}, change_filename={change_filename}, change_filedate={change_filedate}, overwrite_file={overwrite_file}. "
+                f"Anzahl exportierter Emails: {exported_emails}. Zielverzeichnis: {export_directory}"
+            )
 
         else:
             QMessageBox.warning(gui, "Ungültiger Exporttyp", f"Der Exporttyp '{export_type}' ist nicht bekannt.")
@@ -658,7 +651,7 @@ def show_loading_dialog(parent, message, duration=None):
     layout.addWidget(label)  # Füge das Label zum Layout hinzu
 
     dialog.setLayout(layout)  # Setze das Layout für den Dialog
-    dialog.resize(300, 100)  # Setze die Größe des Dialogfensters
+    dialog.resize(500, 100)  # Setze die Größe des Dialogfensters
     dialog.show()  # Zeige den Dialog an
 
     # Falls eine Dauer angegeben ist, schließe den Dialog automatisch nach Ablauf dieser Zeit
