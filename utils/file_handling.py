@@ -34,7 +34,7 @@ import datetime
 import logging
 from enum import Enum
 
-# Erstellen eines app_loggers für Protokollierung von Ereignissen und Fehlern
+# Erstellen eines Loggers für Protokollierung von Ereignissen und Fehlern
 app_logger = logging.getLogger(__name__)
 
 class FileAccessStatus(Enum):
@@ -182,19 +182,22 @@ def rename_file(current_name: str, new_name: str, retries=3, delay_ms=200, max_c
 
     try:
         if max_console_output: print(f"Prüfe: {os.path.exists(current_name)}")
+        app_logger.debug(f"Prüfe: {os.path.exists(current_name)}")  # Debugging-Ausgabe
     except FileNotFoundError as e:
         if max_console_output: print("Datei nicht gefunden:", current_name)
         if max_console_output: print(e)
+        app_logger.debug(f"Datei nicht gefunden: ", current_name)  # Debugging-Ausgabe
     except Exception as e:
         if max_console_output: print("Allgemeiner Fehler:", e)
+        app_logger.error(f"Allgemeiner Fehler: {e}")  # Debugging-Ausgabe
 
     while attempt < retries:
         try:
             app_logger.debug(f"Aktueller Dateiname: {current_name}")  # Debugging-Ausgabe: Log-File
             app_logger.debug(f"Neuer Dateiname: {new_name}")  # Debugging-Ausgabe: Log-File
-            #os.rename(current_name, new_name)
             shutil.move(current_name, new_name)
             rename_file_result = FileOperationResult.SUCCESS  # Erfolgreiche Umbenennung
+            app_logger.debug(f"Erfolreiche Umbenennung: {current_name} -> {new_name}")  # Debugging-Ausgabe: Log-File
             break # Erfolgreich umbenannt (ACHTUNG: Das muss auch noch im Programm msg_file_renamer korrigiert werden
 
         except FileNotFoundError:
@@ -223,6 +226,7 @@ def rename_file(current_name: str, new_name: str, retries=3, delay_ms=200, max_c
 
         attempt += 1
         time.sleep(delay_ms / 1000)  # Wartezeit in Sekunden
+        app_logger.debug(f"Versuch {attempt} von {retries} bei Umbenennung von {current_name} zu {new_name}.")  # Debugging-Ausgabe: Log-File
 
     return rename_file_result
 

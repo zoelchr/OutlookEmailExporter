@@ -4,8 +4,8 @@ import logging
 
 from PySide6.QtWidgets import QMessageBox
 
-from msg_generate_new_filename import generate_new_msg_filename
-from file_handling import rename_file, FileOperationResult
+from modules.msg_generate_new_filename import generate_new_msg_filename
+from utils.file_handling import rename_file, FileOperationResult
 from config import KNOWNSENDER_FILE
 
 # Erstellen eines Loggers für Protokollierung von Ereignissen und Fehlern
