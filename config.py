@@ -41,3 +41,6 @@ MAX_ENV_EXPORT_TARGETS = int(os.getenv("MAX_ENV_EXPORT_TARGETS", "5"))
 
 # Liste mit den bekannten Absendern
 KNOWNSENDER_FILE = os.getenv("KNOWNSENDER_FILE", "./known_senders_private.csv")
+
+# Testmodus (kein Email-Export)
+TEST_MODE = os.getenv("TEST_MODE", "false").lower() in ["true", "1", "yes", "y"]

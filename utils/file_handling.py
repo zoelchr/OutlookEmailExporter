@@ -59,6 +59,7 @@ class FileOperationResult(Enum):
     UNKNOWN_ERROR = "Unknown error"
     VALUE_ERROR = "Value error"
     ERROR = "Error"
+    TEST_MODE = "Test mode"
 
 class FileHandle:
     """

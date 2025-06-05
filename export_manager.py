@@ -4,9 +4,10 @@ import logging
 
 from PySide6.QtWidgets import QMessageBox
 
+from dotenv import load_dotenv
 from modules.msg_generate_new_filename import generate_new_msg_filename
 from utils.file_handling import rename_file, FileOperationResult
-from config import KNOWNSENDER_FILE
+from config import KNOWNSENDER_FILE, TEST_MODE
 
 # Erstellen eines Loggers für Protokollierung von Ereignissen und Fehlern
 app_logger = logging.getLogger(__name__)
@@ -44,39 +45,44 @@ class ExportManager:
         # 1. Überprüfen, ob das Exportverzeichnis existiert
         if not os.path.exists(self.export_directory):
             error_message = f"Das Exportverzeichnis existiert nicht: \n{self.export_directory}"
-            logging.error(error_message)
+            app_logger.error(error_message)
             show_error_dialog(error_message)
-            logging.debug(f"Das Exportverzeichnis existiert nicht: \n{self.export_directory}")
+            app_logger.debug(f"Das Exportverzeichnis existiert nicht: \n{self.export_directory}")
             return 0
 
         # 2. Überprüfen, ob Schreibrechte im Exportverzeichnis vorhanden sind
         if not os.access(self.export_directory, os.W_OK):
             error_message = f"Keine Schreibrechte im Exportverzeichnis: \n{self.export_directory}"
-            logging.error(error_message)
+            app_logger.error(error_message)
             show_error_dialog(error_message)
-            logging.debug(f"Keine Schreibrechte im Exportverzeichnis: \n{self.export_directory}")
+            app_logger.debug(f"Keine Schreibrechte im Exportverzeichnis: \n{self.export_directory}")
             return 0
 
-        logging.debug(f"Exportverzeichnis geprüft: {self.export_directory} (existiert und ist beschreibbar).")
+        app_logger.debug(f"Exportverzeichnis geprüft: {self.export_directory} (existiert und ist beschreibbar).")
 
         # 3. Abrufen der ausgewählten Emails
         selected_emails = self.email_table_model.get_selected_emails()
-        logging.debug(f"Anzahl ausgewählter Emails: {len(selected_emails)}")
+        app_logger.debug(f"Anzahl ausgewählter Emails: {len(selected_emails)}")
 
         if not selected_emails:
             error_message = f"Keine Emails zum Exportieren vorhanden."
-            logging.error(error_message)
+            app_logger.error(error_message)
             show_error_dialog(error_message)
-            logging.debug(f"Keine Emails zum Exportieren vorhanden.")
+            app_logger.debug(f"Keine Emails zum Exportieren vorhanden.")
             return 0
 
         # Alle ausgewählten Emails abarbeiten
         for email in selected_emails:
-            # print(f"- {email}")
+            print(f"- {email}")
 
             # Speichern der Nachricht als MSG über Outlook mit einem vereinfachten Namen
-            path_and_file_name = self.save_as_msg(email)
-            logging.debug(f"Initialer absoluter Dateiname: {path_and_file_name}.")
+            if not TEST_MODE:
+                path_and_file_name = self.save_as_msg(email, test_mode=False)
+            else:
+                path_and_file_name = self.save_as_msg(email, test_mode=True)
+                app_logger.warning(f"MSG-Date wegen Test-Modus nicht gespeichert.")
+
+            app_logger.debug(f"Initialer absoluter Dateiname: {path_and_file_name}.")
 
             # Neuen Dateinamen erzeugen
             new_msg_filename_collection = generate_new_msg_filename(
@@ -85,7 +91,7 @@ class ExportManager:
                 file_list_of_known_senders=KNOWNSENDER_FILE
             )
             new_file_name = new_msg_filename_collection.new_msg_filename
-            logging.debug(f"Neuer Dateiname: {new_file_name}.")
+            app_logger.debug(f"Neuer Dateiname: {new_file_name}.")
 
             if not new_file_name:  # Wenn new_file_name leer oder None ist
                 app_logger.debug(f"Kein gültiger Dateiname gefunden für E-Mail: {email.subject}. Überspringe...")
@@ -96,20 +102,27 @@ class ExportManager:
                 os.path.dirname(path_and_file_name),
                 new_file_name
             )
-            logging.debug(f"Neuer absoluter Dateiname: {new_path_and_file_name}.")
+            app_logger.debug(f"Neuer absoluter Dateiname: {new_path_and_file_name}.")
 
             # Jetzt msg-File umbenennen
-            result = rename_file(path_and_file_name, new_path_and_file_name)
-            if result == FileOperationResult.SUCCESS:
-                logging.debug(f"Die Umbenennung der Datei {path_and_file_name} war erfolgreich. Neuer Dateiname: {new_path_and_file_name}.")
+
+            if not TEST_MODE:
+                result = rename_file(path_and_file_name, new_path_and_file_name)
             else:
-                logging.error(f"Die Umbenennung der Datei {path_and_file_name} war nicht erfolgreich: {result}")
+                result = FileOperationResult.TEST_MODE
+
+            if result == FileOperationResult.SUCCESS:
+                app_logger.debug(f"Die Umbenennung der Datei {path_and_file_name} war erfolgreich. Neuer Dateiname: {new_path_and_file_name}.")
+            elif result == FileOperationResult.TEST_MODE:
+                app_logger.debug(f"Keine Umbenennung der Datei {path_and_file_name} efolgt da Test-Modus. Neuer wäre Dateiname: {new_path_and_file_name}.")
+            else:
+                app_logger.error(f"Die Umbenennung der Datei {path_and_file_name} war nicht erfolgreich: {result}")
                 continue  # Überspringt zur nächsten E-Mail
 
         return len(selected_emails)
 
 
-    def save_as_msg(self, email: object, new_email_name=None):
+    def save_as_msg(self, email: object, new_email_name=None, test_mode=False):
         """
         Speichert die ausgewählte E-Mail als MSG-Datei direkt über das Outlook-Objekt.
 
@@ -122,23 +135,27 @@ class ExportManager:
                 raise ValueError("Kein gültiges Outlook-Objekt gefunden.")
 
             # Verzeichnis normalisieren (entfernt gemischte Trennzeichen und leere Endungen)
-            logging.debug(f"Verzeichnis aus 'self.export_directory': {self.export_directory}.")
+            app_logger.debug(f"Verzeichnis aus 'self.export_directory': {self.export_directory}.")
             normalized_export_directory = os.path.normpath(self.export_directory)
-            logging.debug(f"Verzeichnis nach Normalisierung: {normalized_export_directory}.")
+            app_logger.debug(f"Verzeichnis nach Normalisierung: {normalized_export_directory}.")
 
             # Intialen Dateiname festlegen
             if not new_email_name:
                 #subject = email.subject.replace(" ", "_")
                 file_name = sanitize_filename(email.subject)
                 sanitized_file_name = f"{file_name}.msg"
-                logging.debug(f"Bereinigter Filename: {sanitized_file_name}.")
+                app_logger.debug(f"Bereinigter Filename: {sanitized_file_name}.")
 
                 file_path = os.path.join(normalized_export_directory, sanitized_file_name)
             else:
                 file_path = os.path.join(normalized_export_directory, new_email_name + ".msg")
 
             # Speichern der Nachricht als MSG über Outlook
-            outlook_item.SaveAs(file_path, 3)  # 3 entspricht dem MSG-Format
+            if not test_mode:
+                outlook_item.SaveAs(file_path, 3)  # 3 entspricht dem MSG-Format
+                app_logger.debug(f"Datei gespeichert: {file_path}.")
+            else:
+                app_logger.warning(f"Datei nicht gespeichert, da Test-Modus aktiv.")
 
             return file_path
 

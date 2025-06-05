@@ -166,7 +166,8 @@ def get_msg_object(msg_file: str) -> dict:
                 if msg_object.body:
                     msg_data["body"] = msg_object.body
                     msg_data["status"] = [MsgAccessStatus.SUCCESS]  # Setze SUCCESS, wenn Body erfolgreich extrahiert
-                    app_logger.debug(f"Die MSG-Datei enthält einen Nachrichten-Body: {msg_object.body}")  # Debugging-Ausgabe
+                    anzahl_zeichen = len(msg_object.body)
+                    app_logger.debug(f"Die MSG-Datei enthält einen Nachrichten-Body mit {anzahl_zeichen} Zeichen.")  # Debugging-Ausgabe
                 else:
                     msg_data["status"].append(MsgAccessStatus.BODY_MISSING)
                     app_logger.warning(f"Die MSG-Datei enthält keinen Nachrichten-Body.")  # Debugging-Ausgabe
