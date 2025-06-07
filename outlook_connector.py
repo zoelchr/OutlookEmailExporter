@@ -281,17 +281,28 @@ def lade_emails(postfach_name: str, ordner_pfad: str) -> list[Email]:
         for part in ordner_pfad.split("/"):
             current_folder = current_folder.Folders[part]
 
+        # Sortiere die E-Mails im Ordner nach Empfangszeit absteigend
+        #current_folder.Items.Sort("[ReceivedTime]", True)
+
+        app_logger.debug(f"Ordner: {current_folder.Name}, DefaultItemType: {getattr(current_folder, 'DefaultItemType', 'unbekannt')}")
+
         # Iteriere über die Objekte im Ordner und extrahiere nur E-Mail-Objekte (Class = 43)
         for item in current_folder.Items:
-            if item.Class == 43:  # 43 steht für E-Mail-Objekt (olMail)
-                email = Email(
-                    received=str(item.ReceivedTime.strftime("%d.%m.%Y %H:%M")),     # Empfangszeit als formatierter String
-                    sender_name=item.SenderName,                                    # Name des Absenders
-                    sender_email=item.SenderEmailAddress,                           # E-Mail-Adresse des Absenders
-                    subject=item.Subject or "",                                     # Betreff (oder leer, falls nicht vorhanden)
-                    outlook_item=item                                               # Das Original-Outlook-Objekt
-                )
-                emails.append(email)  # Füge das generierte `Email`-Objekt der Liste hinzu
+            try:
+                if hasattr(item, "Class") and item.Class == 43:  # 43 steht für E-Mail-Objekt (olMail)
+                    app_logger.debug(f"Objekt hat das Class-Attribute 43 (E-Mail)")
+                    email = Email(
+                        received=str(item.ReceivedTime.strftime("%d.%m.%Y %H:%M")),     # Empfangszeit als formatierter String
+                        sender_name=item.SenderName,                                    # Name des Absenders
+                        sender_email=item.SenderEmailAddress,                           # E-Mail-Adresse des Absenders
+                        subject=item.Subject or "",                                     # Betreff (oder leer, falls nicht vorhanden)
+                        #outlook_item=item,                                               # Das Original-Outlook-Objekt
+                        entry_id = item.EntryID,
+                        store_id = item.Parent.StoreID
+                    )
+                    emails.append(email)  # Füge das generierte `Email`-Objekt der Liste hinzu
+            except Exception as e:
+                app_logger.debug(f"Item konnte nicht geprüft werden: {e}")
 
         # Logs die Anzahl der erfolgreich geladenen E-Mails
         app_logger.info(f"{len(emails)} Mails geladen.")
@@ -301,3 +312,37 @@ def lade_emails(postfach_name: str, ordner_pfad: str) -> list[Email]:
         # Logs den Fehler, falls während des Ladevorgangs ein Problem auftritt
         app_logger.error(f"Fehler beim Lesen von Mails: {e}")
         return []  # Gibt eine leere Liste zurück, falls ein Fehler auftritt
+
+
+def count_emails_in_folder(postfach_name: str, ordner_pfad: str) -> int:
+    """
+    Gibt die Anzahl der E-Mails (olMailItem, Class == 43) im angegebenen Outlook-Postfach und Ordner zurück.
+    Bei Fehlern wird -1 zurückgegeben.
+
+    Args:
+        postfach_name (str): Name des Outlook-Postfachs.
+        ordner_pfad (str): Pfad zum gewünschten Ordner (z.B. "Posteingang" oder "Unterordner1/Unterordner2").
+
+    Returns:
+        int: Anzahl der E-Mails im Ordner, oder -1 bei Fehler.
+    """
+    try:
+        import win32com.client
+
+        outlook = win32com.client.Dispatch("Outlook.Application")
+        namespace = outlook.GetNamespace("MAPI")
+        root_folder = namespace.Folders[postfach_name]
+
+        # Navigiere durch die Ordnerstruktur anhand des Pfades
+        current_folder = root_folder
+        for part in ordner_pfad.split("/"):
+            if part:
+                current_folder = current_folder.Folders[part]
+
+        # Zähle nur Items mit Class == 43 (olMailItem)
+        mail_count = sum(1 for item in current_folder.Items if getattr(item, "Class", None) == 43)
+        return mail_count
+
+    except Exception as e:
+        # Optional: Logging hier ergänzen, z.B. mit app_logger.error(f"Fehler beim Zählen der E-Mails: {e}")
+        return -1

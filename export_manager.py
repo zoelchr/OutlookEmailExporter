@@ -3,8 +3,10 @@ import re
 import logging
 
 from PySide6.QtWidgets import QMessageBox
-
+import win32com.client
 from dotenv import load_dotenv
+import time
+
 from modules.msg_generate_new_filename import generate_new_msg_filename
 from utils.file_handling import rename_file, FileOperationResult
 from config import KNOWNSENDER_FILE, TEST_MODE
@@ -130,9 +132,18 @@ class ExportManager:
         """
 
         try:
-            outlook_item = email.outlook_item
-            if not outlook_item:
+            #outlook_item = email.outlook_item
+            # Verbindung zu Outlook herstellen und auf den angegebenen Postfach-Namespace zugreifen
+            outlook = win32com.client.Dispatch("Outlook.Application")
+            namespace = outlook.GetNamespace("MAPI")
+            #outlook_item = namespace.GetItemFromID(email.entry_id, email.store_id)
+            outlook_item = get_outlook_item_with_retry(namespace, email.entry_id, email.store_id)
+
+            #if not outlook_item:
+            if outlook_item is None:
                 raise ValueError("Kein gültiges Outlook-Objekt gefunden.")
+            else:
+                pass
 
             # Verzeichnis normalisieren (entfernt gemischte Trennzeichen und leere Endungen)
             app_logger.debug(f"Verzeichnis aus 'self.export_directory': {self.export_directory}.")
@@ -240,3 +251,18 @@ def sanitize_filename(filename):
         filename = filename[:max_length]
 
     return filename
+
+
+def get_outlook_item_with_retry(namespace, entry_id, store_id, retries=3, delay=1):
+    """
+    Versucht, ein Outlook-Item anhand EntryID und StoreID mehrfach zu laden.
+    Bei Fehlern werden mehrere Versuche unternommen, jeweils mit einer kurzen Pause.
+    """
+    for attempt in range(retries):
+        try:
+            return namespace.GetItemFromID(entry_id, store_id)
+        except Exception as e:
+            app_logger.warning(f"Versuch {attempt + 1} fehlgeschlagen: {e}")
+            time.sleep(delay)
+    app_logger.error(f"Outlook-Item konnte nach {retries} Versuchen nicht geladen werden (EntryID: {entry_id})")
+    return None

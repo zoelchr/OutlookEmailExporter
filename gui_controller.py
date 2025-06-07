@@ -64,10 +64,12 @@ Das Modul kann leicht für neue GUI-Funktionen erweitert werden, indem neue Widg
 und mit den entsprechenden Methoden in `gui_controller.py` verknüpft werden.
 """
 import logging
+import time
+import traceback
 from PySide6.QtWidgets import QApplication, QMessageBox, QHeaderView, QAbstractItemView, QDialog, QLabel, QVBoxLayout
 from PySide6.QtCore import QTimer, Qt
 
-from outlook_connector import get_outlook_postfaecher, get_outlook_ordner, lade_emails
+from outlook_connector import get_outlook_postfaecher, get_outlook_ordner, lade_emails, count_emails_in_folder
 from email_table_model import EmailTableModel
 from exportziel_manager import connect_gui_signals_exportziel_manager, get_exportziel_manager
 from export_manager import ExportManager
@@ -198,11 +200,34 @@ def load_postfaecher_async(gui):
             # Wähle standardmäßig den Hinweis-Eintrag "Bitte Postfach auswählen …" aus.
             gui.combo_postfach.setCurrentIndex(0)
 
-            # Verbinde die Auswahländerung der ComboBox mit der entsprechenden Logik.
-            # Mithilfe von `lambda index` wird die Funktion `on_postfach_changed` aufgerufen und gleichzeitig das benötigte
-            # Argument `gui` übergeben. Ohne `lambda` könnte nur der Index verwendet werden, da das Signal `currentIndexChanged`
-            # standardmäßig nur diesen bereitstellt.
-            gui.combo_postfach.currentIndexChanged.connect(lambda index: on_postfach_changed(gui, index))
+            # # Check if there are any active connections before attempting to disconnect
+            # try:
+            #     gui.combo_postfach.currentIndexChanged.disconnect()
+            #     app_logger.debug("Verbindung zu combo_postfach erfolgreich getrennt.")
+            # except (TypeError, RuntimeError):
+            #     # Es war noch keine Verbindung vorhanden oder ein Fehler beim Trennen
+            #     app_logger.debug("Es gab zu combo_postfach noch keine Verbindung oder es ist ein Fehler beim Trennen aufgetreten.")
+            #     pass
+            #
+            # # Verbinde die Auswahländerung der ComboBox mit der entsprechenden Logik.
+            # # Mithilfe von `lambda index` wird die Funktion `on_postfach_changed` aufgerufen und gleichzeitig das benötigte
+            # # Argument `gui` übergeben. Ohne `lambda` könnte nur der Index verwendet werden, da das Signal `currentIndexChanged`
+            # # standardmäßig nur diesen bereitstellt.
+            # gui.combo_postfach.currentIndexChanged.connect(lambda index: on_postfach_changed(gui, index))
+
+            # Beispiel für combo_postfach:
+            if not hasattr(gui, "_postfach_slot"):
+                app_logger.debug("combo_postfach hat noch kein Attribut '_postfach_slot'.")
+                gui._postfach_slot = lambda index: on_postfach_changed(gui, index)
+                app_logger.debug(f"combo_postfach hat neues Attribut '_postfach_slot'.")
+            else:
+                try:
+                    gui.combo_postfach.currentIndexChanged.disconnect(gui._postfach_slot)
+                    app_logger.debug("Verbindung zu combo_postfach wurde getrennt mit Attribut '_postfach_slot'.")
+                except (TypeError, RuntimeError):
+                    pass
+            gui.combo_postfach.currentIndexChanged.connect(gui._postfach_slot)
+            app_logger.debug("Verbindung zu combo_postfach wurde erstellt mit Attribut '_postfach_slot'.")
 
             # Aktualisiere den Zustand der Export-Buttons
             update_export_buttons_state(gui)
@@ -290,9 +315,42 @@ def on_postfach_changed(gui, index):
             # Setzt den Standardauswahlindex auf den ersten Eintrag "Bitte Verzeichnis auswählen...".
             gui.combo_verzeichnis.setCurrentIndex(0)
 
-            # Verknüpft die GUI-Verzeichnis-ComboBox mit der Methode on_verzeichnis_changed.
-            # Jedes Mal, wenn der Benutzer die Auswahl in der ComboBox ändert, wird die Funktion `on_verzeichnis_changed` aufgerufen.
-            gui.combo_verzeichnis.currentIndexChanged.connect(lambda index: on_verzeichnis_changed(gui, index))
+            # # Check if there are any active connections before attempting to disconnect
+            # try:
+            #     gui.combo_verzeichnis.currentIndexChanged.disconnect()
+            #     app_logger.debug("Verbindung zu combo_verzeichnis erfolgreich getrennt.")
+            # except (TypeError, RuntimeError):
+            #     # Es war noch keine Verbindung vorhanden oder ein Fehler beim Trennen
+            #     app_logger.debug("Es gab zu combo_verzeichnis noch keine Verbindung oder es ist ein Fehler beim Trennen aufgetreten.")
+            #     pass
+            #
+            # # Verknüpft die GUI-Verzeichnis-ComboBox mit der Methode on_verzeichnis_changed.
+            # # Jedes Mal, wenn der Benutzer die Auswahl in der ComboBox ändert, wird die Funktion `on_verzeichnis_changed` aufgerufen.
+            # gui.combo_verzeichnis.currentIndexChanged.connect(lambda index: on_verzeichnis_changed(gui, index))
+
+            # # Beispiel für combo_postfach:
+            # if not hasattr(gui, "_verzeichnis_slot"):
+            #     gui._verzeichnis_slot = lambda index: on_verzeichnis_changed(gui, index)
+            # try:
+            #     gui.combo_verzeichnis.currentIndexChanged.disconnect(gui._verzeichnis_slot)
+            # except (TypeError, RuntimeError):
+            #     pass
+            # gui.combo_verzeichnis.currentIndexChanged.connect(gui._verzeichnis_slot)
+
+            # Beispiel für combo_postfach:
+            if not hasattr(gui, "_verzeichnis_slot"):
+                app_logger.debug("combo_verzeichnis hat noch kein Attribut '_verzeichnis_slot'.")
+                gui._verzeichnis_slot = lambda index: on_verzeichnis_changed(gui, index)
+                app_logger.debug(f"combo_verzeichnis hat neues Attribut '_verzeichnis_slot'.")
+            else:
+                try:
+                    gui.combo_verzeichnis.currentIndexChanged.disconnect(gui._verzeichnis_slot)
+                    app_logger.debug("Verbindung zu combo_verzeichnis wurde getrennt mit Attribut '_verzeichnis_slot'.")
+                except (TypeError, RuntimeError):
+                    pass
+            gui.combo_verzeichnis.currentIndexChanged.connect(gui._verzeichnis_slot)
+            app_logger.debug("Verbindung zu combo_verzeichnis wurde erstellt mit Attribut '_verzeichnis_slot'.")
+
 
             # Protokolliert die Anzahl der geladenen Verzeichnisse in die Logging-Daten.
             app_logger.debug(f"{len(verzeichnisse)} Verzeichnisse für '{postfach_name}' geladen")
@@ -346,11 +404,12 @@ def on_verzeichnis_changed(gui, index):
     index : int
         Der Index des ausgewählten Verzeichnisses in der ComboBox.
     """
+    app_logger.debug(f"on_verzeichnis_changed wurde aufgerufen (Index={index})")
 
     # Aktualisiere den Zustand der Export-Buttons
     update_export_buttons_state(gui)
 
-    if index > 0:
+    if index >= 0:
         # Platzhalter "Bitte Verzeichnis auswählen …" entfernen, falls vorhanden
         # (wird nur beim ersten Aufruf benötigt)
         placeholder_index = gui.combo_verzeichnis.findText(placeholder_text_verzeichnis)
@@ -378,9 +437,17 @@ def on_verzeichnis_changed(gui, index):
         # Nach Abschluss des Imports wird die Anzahl der geladenen E-Mails protokolliert.
         app_logger.debug(f"Starte Mail-Import für Postfach='{postfach_name}', Ordner='{ordner_pfad}'")
 
+        # Anzahl der Email ermitteln
+        preloading_dialog = show_loading_dialog(gui, "Anzahl Emails wird ermittelt...")
+        anzahl_emails = count_emails_in_folder(postfach_name, ordner_pfad)
+        preloading_dialog.close()
+
         # Zeige dem Benutzer an, dass der Ladevorgang läuft
-        #gui.statusBar().showMessage("E-Mails werden geladen...")
-        loading_dialog = show_loading_dialog(gui, "E-Mails werden geladen... Bitte warten.")
+        if anzahl_emails == -1:
+            ladetext = f"Versuche unbekannte Anzahl von E-Mails zu laden... Bitte warten."
+        else:
+            ladetext = f"{anzahl_emails} E-Mails werden geladen... Bitte warten."
+        loading_dialog = show_loading_dialog(gui, ladetext)
 
         # Erzeuge das Modell und setze es in die Tabelle
         emails = lade_emails(postfach_name, ordner_pfad)
@@ -390,10 +457,9 @@ def on_verzeichnis_changed(gui, index):
         app_logger.debug(f"Tabelle wird mit {len(emails)} E-Mails befüllt")
 
         # Nach dem Laden: Statusmeldung aktualisieren oder entfernen
-        #gui.statusBar().showMessage(f"{len(emails)} E-Mails geladen.", 3000)  # Meldung für 5 Sekunden anzeigen
         loading_dialog.close()
         result_message = f"{len(emails)} E-Mails wurden geladen."
-        show_loading_dialog(gui, result_message, duration=2000)
+        show_loading_dialog(gui, result_message, duration=1500)
 
         # Verknüpft das generierte Modell mit der Tabellenansicht (`table_view`) der GUI.
         # Dadurch werden die Daten aus dem Modell in der Tabellendarstellung angezeigt.
@@ -638,6 +704,11 @@ def show_loading_dialog(parent, message, duration=None):
 
     Rückgabewert:
         QDialog: Die Instanz des erstellten Dialogs.
+
+    Hinweis zur Verwendung:
+        loading_dialog = show_loading_dialog(gui, "Anzahl Emails wird ermittelt...")
+        ... Vorgang ...
+        loading_dialog.close()
     """
     # Dialog initialisieren
     dialog = QDialog(parent)

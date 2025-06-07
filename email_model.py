@@ -13,4 +13,6 @@ class Email:
     sender_name: str      # Anzeigename des Absenders
     sender_email: str     # E-Mail-Adresse des Absenders
     subject: str          # Betreff der Nachricht
-    outlook_item: object  # Original Outlook-Objekt (MailItem) für spätere Aktionen (Export etc.)
+    #outlook_item: object  # Original Outlook-Objekt (MailItem) für spätere Aktionen (Export etc.)
+    entry_id: str
+    store_id: str
