@@ -1,0 +1,5 @@
+PySide6
+pywin32
+jinja2
+pandas
+pyinstaller

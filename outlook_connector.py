@@ -281,9 +281,6 @@ def lade_emails(postfach_name: str, ordner_pfad: str) -> list[Email]:
         for part in ordner_pfad.split("/"):
             current_folder = current_folder.Folders[part]
 
-        # Sortiere die E-Mails im Ordner nach Empfangszeit absteigend
-        #current_folder.Items.Sort("[ReceivedTime]", True)
-
         app_logger.debug(f"Ordner: {current_folder.Name}, DefaultItemType: {getattr(current_folder, 'DefaultItemType', 'unbekannt')}")
 
         # Iteriere über die Objekte im Ordner und extrahiere nur E-Mail-Objekte (Class = 43)
